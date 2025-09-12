@@ -7,7 +7,7 @@ import Header from './components/Header'
 import SearchForm from './components/SearchForm'
 import Spinner from './components/Spinner'
 import ProfileReport from './components/ProfileReport'
-import { fetchProfileData } from './services/geminiService'
+import { fetchClientProfile } from './services/geminiService'
 import type { ProfileData } from './types'
 
 export default function App(){
