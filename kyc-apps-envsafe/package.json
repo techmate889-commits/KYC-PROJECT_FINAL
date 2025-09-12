@@ -13,7 +13,9 @@
     "react-dom": "18.2.0",
     "@google/genai": "^1.10.0",
     "jspdf": "2.5.1",
-    "html2canvas": "1.4.1"
+    "html2canvas": "1.4.1",
+    "lucide-react": "^0.344.0",
+    "recharts": "^2.8.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.6",
