@@ -11,7 +11,8 @@ const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || "YOUR_API_KEY_HERE";
 // Gemini or OpenAI endpoint
 const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=" + API_KEY;
 
-export async function fetchProfileData(instagramUsername: string): Promise<ProfileData | null> {
+export async function fetchClientProfile(instagramUsername: string): Promise<ProfileData | null> {
+
   try {
     const prompt = `
 You are an intelligent assistant that performs client KYC analysis from Instagram profiles and related online data.
