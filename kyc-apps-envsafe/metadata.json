@@ -1,0 +1,6 @@
+{
+  "name": " KYC-apps-final",
+  "description": "A standalone system that allows a sales executive to enter an Instagram username or link to automatically gather real-time client information into a structured KYC report.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}
