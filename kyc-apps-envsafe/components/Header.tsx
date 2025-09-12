@@ -27,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onThemeToggle, theme }) =>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <LogoIcon className="h-7 w-7 text-white" />
-                <span className="text-xl font-bold text-white tracking-tight">KYC System</span>
+                <span className="text-xl font-bold text-white tracking-tight">Know Your Client</span>
               </div>
               <p className="text-sm text-white/80">Welcome to your Client Dashboard</p>
             </div>
@@ -41,9 +41,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onThemeToggle, theme }) =>
               aria-label="Toggle theme"
             >
               {theme === 'light' ? (
-                <MoonIcon className="h-6 w-6" />
+               <Moon className="h-6 w-6" />
               ) : (
-                <SunIcon className="h-6 w-6" />
+               <Sun className="h-6 w-6" />
               )}
             </button>
           </div>
