@@ -7,8 +7,8 @@ import React from "react";
 import { MenuIcon, MoonIcon, SunIcon, LogoIcon } from "./icons";
 
 interface HeaderProps {
-  onMenuClick: () => void;
-  onThemeToggle: () => void;
+  onMenuClick: () => void;   // Opens the slide-out menu
+  onThemeToggle: () => void; // Toggles dark/light theme
   theme: "light" | "dark";
 }
 
@@ -23,7 +23,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick, onThemeToggle, theme }) =>
             <button
               onClick={onMenuClick}
               className="p-2 rounded-md text-white/80 hover:bg-white/20 transition-colors"
-              aria-label="Open sidebar menu"
+              aria-label="Open menu"
             >
               <MenuIcon className="h-6 w-6" />
             </button>
