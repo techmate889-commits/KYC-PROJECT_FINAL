@@ -35,7 +35,7 @@ You are an expert KYC analyst. Build a verified profile of a client using their 
 
 Instagram Handle: "${handle}"
 
-Required Schema:
+Required Schema (⚠️ Followers, Following, Posts are handled separately — DO NOT include them):
 {
   "instagramUsername": string,
   "instagramHandle": string,
@@ -54,9 +54,6 @@ Required Schema:
   "businessWebsite": string | "Not Publicly Available",
   "businessOverview": string | "Not Publicly Available",
   "businessAccountId": string | "Not Publicly Available",
-  "instagramFollowers": string,
-  "instagramFollowing": string,
-  "instagramPostsCount": string,
   "engagementRatio": string | "Not Publicly Available",
   "postFrequency": string | "Not Publicly Available",
   "contentType": string | "Not Publicly Available",
@@ -103,9 +100,12 @@ Required Schema:
       ...data,
       id: username,
       lastFetched: new Date().toISOString(),
+      instagramFollowers: "Not Publicly Available", // temp, will replace
+      instagramFollowing: "Not Publicly Available",
+      instagramPostsCount: "Not Publicly Available",
     };
 
-    // ✅ Scraper enrichment for counts
+    // ✅ Always fill counts with our scraper
     const counts = await fetchInstagramCounts(username);
     if (counts) {
       profileData.instagramFollowers = counts.followers.toString();
