@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
 
@@ -18,24 +18,25 @@ const cleanJsonString = (jsonString: string): string => {
 };
 
 /**
- * Fetch client profile using Gemini + Instagram scraper
+ * Fetch client profile using Gemini (qualitative) + Instagram scraper (counts)
  */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+  const ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY! });
 
   const prompt = `
 You are an expert KYC analyst. Build a verified profile of a client using their Instagram handle.
 
-⚠️ STRICT RULES:
+⚠️ RULES:
 - Do NOT guess or invent.
 - If data cannot be found, set "Not Publicly Available".
-- Output must be JSON only. No extra text.
+- Followers, Following, and Posts are handled separately — do NOT include them in the JSON.
+- Output must be valid JSON only. No extra text.
 
 Instagram Handle: "${handle}"
 
-Required Schema (⚠️ Followers, Following, Posts are handled separately — DO NOT include them):
+Required Schema:
 {
   "instagramUsername": string,
   "instagramHandle": string,
@@ -75,17 +76,15 @@ Required Schema (⚠️ Followers, Following, Posts are handled separately — D
 
   console.log("🚀 Sending KYC prompt to Gemini...");
 
-  const response: GenerateContentResponse = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-    config: {
-      tools: [{ googleSearch: {} }],
-      temperature: 0.0,
-    },
-  });
+  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const response = await model.generateContent(prompt);
+
+  // Extract raw Gemini output
+  const rawText =
+    response.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
   try {
-    const jsonText = cleanJsonString(response.text);
+    const jsonText = cleanJsonString(rawText);
     if (!jsonText) throw new Error("No valid JSON from Gemini");
 
     const data: Omit<ProfileData, "id" | "lastFetched"> = JSON.parse(jsonText);
@@ -100,26 +99,30 @@ Required Schema (⚠️ Followers, Following, Posts are handled separately — D
       ...data,
       id: username,
       lastFetched: new Date().toISOString(),
-      instagramFollowers: "Not Publicly Available", // temp, will replace
+      instagramFollowers: "Not Publicly Available", // placeholder
       instagramFollowing: "Not Publicly Available",
       instagramPostsCount: "Not Publicly Available",
     };
 
-    // ✅ Always fill counts with our scraper
-    const counts = await fetchInstagramCounts(username);
-    if (counts) {
-      profileData.instagramFollowers = counts.followers.toString();
-      profileData.instagramFollowing = counts.following.toString();
-      profileData.instagramPostsCount = counts.posts.toString();
-      if (counts.profilePic) profileData.profilePictureUrl = counts.profilePic;
-      if (counts.fullName) profileData.fullName = counts.fullName;
-      if (counts.bio) profileData.intro = counts.bio;
+    // ✅ Always enrich with scraper counts
+    try {
+      const counts = await fetchInstagramCounts(username);
+      if (counts) {
+        profileData.instagramFollowers = counts.followers.toString();
+        profileData.instagramFollowing = counts.following.toString();
+        profileData.instagramPostsCount = counts.posts.toString();
+        if (counts.profilePic) profileData.profilePictureUrl = counts.profilePic;
+        if (counts.fullName) profileData.fullName = counts.fullName;
+        if (counts.bio) profileData.intro = counts.bio;
+      }
+    } catch (scraperErr) {
+      console.warn("⚠️ Scraper enrichment failed:", scraperErr);
     }
 
     console.log("✅ Final merged KYC profile:", profileData);
     return profileData;
   } catch (e) {
-    console.error("❌ Failed to parse JSON:", response.text, e);
+    console.error("❌ Failed to parse JSON:", rawText, e);
     throw new Error("AI returned invalid data. Profile may be private or complex.");
   }
 };
