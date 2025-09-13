@@ -15,7 +15,8 @@
     "jspdf": "2.5.1",
     "html2canvas": "1.4.1",
     "lucide-react": "^0.344.0",
-    "recharts": "^2.8.0"
+    "recharts": "^2.8.0",
+    "axios": "^1.6.8"
   },
   "devDependencies": {
     "@types/react": "^18.3.6",
