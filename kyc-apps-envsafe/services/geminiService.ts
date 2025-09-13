@@ -37,46 +37,7 @@ You are an expert KYC analyst. Your job is to build a complete, verified profile
 - Output must be JSON only. No extra text.
 
 Instagram Handle to analyze: "${handle}"
-
-Required Schema:
-{
-  "instagramUsername": string,
-  "instagramHandle": string,
-  "fullName": string,
-  "dateOfBirth": string | "Not Publicly Available",
-  "age": number | null,
-  "profilePictureUrl": string | "Not Publicly Available",
-  "profession": string | "Not Publicly Available",
-  "education": string | "Not Publicly Available",
-  "interests": [string] | [],
-  "familyInfo": string | "Not Publicly Available",
-  "country": string | "Not Publicly Available",
-  "location": string | "Not Publicly Available",
-  "businessName": string | "Not Publicly Available",
-  "businessType": "Product" | "Service" | "Coaching" | "Other" | "Not Publicly Available",
-  "businessWebsite": string | "Not Publicly Available",
-  "businessOverview": string | "Not Publicly Available",
-  "businessAccountId": string | "Not Publicly Available",
-  "instagramFollowers": string,
-  "instagramFollowing": string,
-  "instagramPostsCount": string,
-  "engagementRatio": string | "Not Publicly Available",
-  "postFrequency": string | "Not Publicly Available",
-  "contentType": "Personal" | "Business" | "Random" | "Not Publicly Available",
-  "contentQuality": { "rating": "High" | "Medium" | "Low" | "Not Publicly Available", "notes": string | "Not Publicly Available" },
-  "latestPosts": [
-    { "caption": string | "Not Publicly Available", "likes": number | null, "comments": number | null, "views": number | null, "engagement": string | "Not Publicly Available", "postedAt": string | "Not Publicly Available" }
-  ],
-  "otherSocialMedia": [
-    { "platform": string, "handle": string, "followers": string | "Not Publicly Available", "url": string }
-  ],
-  "awards": string | "Not Publicly Available",
-  "mediaCoverage": string | [string] | "Not Publicly Available",
-  "intro": string,
-  "enrichedSources": [string],
-  "confidenceScore": number,
-  "lastFetched": string
-}
+(keep your schema block here unchanged)
 `;
 
   console.log("Sending strict KYC prompt to Gemini...");
@@ -112,7 +73,11 @@ Required Schema:
 
     // ✅ Inject exact counts from RapidAPI
     try {
-      const counts = await fetchInstagramCounts(username);
+      const cleanUsername = username.replace(/^@/, ""); // strip @ if present
+      const counts = await fetchInstagramCounts(cleanUsername);
+
+      console.log("🔍 RapidAPI counts merged for", cleanUsername, counts);
+
       if (counts) {
         profileData.instagramFollowers = counts.followers.toString();
         profileData.instagramFollowing = counts.following.toString();
