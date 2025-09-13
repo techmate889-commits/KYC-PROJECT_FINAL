@@ -5,6 +5,7 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
+import { fetchInstagramCounts } from "./instagramService"; // ✅ NEW
 
 /**
  * Extract valid JSON object from model output
@@ -18,6 +19,7 @@ const cleanJsonString = (jsonString: string): string => {
 
 /**
  * Fetches a comprehensive client profile using an Instagram handle.
+ * Combines Gemini (enriched info) + RapidAPI (exact counts).
  */
 export const fetchClientProfile = async (
   handle: string
@@ -108,7 +110,19 @@ Required Schema:
       lastFetched: new Date().toISOString(),
     };
 
-    console.log("✅ Successfully parsed KYC profile:", profileData);
+    // ✅ Inject exact counts from RapidAPI
+    try {
+      const counts = await fetchInstagramCounts(username);
+      if (counts) {
+        profileData.instagramFollowers = counts.followers.toString();
+        profileData.instagramFollowing = counts.following.toString();
+        profileData.instagramPostsCount = counts.posts.toString();
+      }
+    } catch (err) {
+      console.warn("⚠️ Could not fetch exact Instagram counts:", err);
+    }
+
+    console.log("✅ Final merged KYC profile:", profileData);
     return profileData;
   } catch (e) {
     console.error("❌ Failed to parse JSON response:", response.text, e);
