@@ -21,13 +21,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onChangeTab }) => {
     if (stored) setHistory(JSON.parse(stored));
   }, []);
 
-  // Save history when it changes
-  useEffect(() => {
-    localStorage.setItem("clientHistory", JSON.stringify(history));
-  }, [history]);
-
+  // Remove a profile from history
   const removeFromHistory = (id: string) => {
-    setHistory((prev) => prev.filter((p) => p.id !== id));
+    setHistory((prev) => {
+      const updated = prev.filter((p) => p.id !== id);
+      localStorage.setItem("clientHistory", JSON.stringify(updated));
+      return updated;
+    });
   };
 
   return (
@@ -41,11 +41,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onChangeTab }) => {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 p-3 space-y-1">
+      <nav className="p-3 space-y-1">
         <NavItem
-          label="Client History"
-          active={activeTab === "history"}
-          onClick={() => onChangeTab("history")}
+          label="Dashboard"
+          active={activeTab === "dashboard"}
+          onClick={() => onChangeTab("dashboard")}
         />
         <NavItem
           label="Settings"
@@ -57,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, onChangeTab }) => {
       {/* Client History Section */}
       <div className="flex-1 overflow-y-auto px-3 mt-4">
         <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-          Recent Searches
+          Client History
         </h3>
         {history.length > 0 ? (
           <ul className="space-y-1">
