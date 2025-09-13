@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import { GoogleGenerativeAI } from "@google/generative-ai"; // ✅ correct SDK
+import { GoogleGenerativeAI } from "@google/generative-ai"; // correct SDK
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
 
@@ -24,7 +24,8 @@ const cleanJsonString = (jsonString: string): string => {
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
-  const ai = new GoogleGenerativeAI(process.env.API_KEY!);
+  const genAI = new GoogleGenerativeAI(process.env.API_KEY!);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `
 You are an expert KYC analyst. Your job is to build a complete, verified profile of a client using their Instagram handle.
@@ -63,13 +64,11 @@ Required Schema:
 
   console.log("Sending strict KYC prompt to Gemini...");
 
-  const response = await ai
-    .getGenerativeModel({ model: "gemini-1.5-flash" })
-    .generateContent(prompt);
+  const result = await model.generateContent(prompt);
 
-  // Gemini SDK response format
+  // Safely unwrap SDK response
   const rawText =
-    response.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    result.response.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 
   try {
     const jsonText = cleanJsonString(rawText);
@@ -110,6 +109,8 @@ Required Schema:
     return profileData;
   } catch (e) {
     console.error("❌ Failed to parse JSON response:", rawText, e);
-    throw new Error("AI returned invalid data. Profile may be private or complex.");
+    throw new Error(
+      "AI returned invalid data. Profile may be private or complex."
+    );
   }
 };
