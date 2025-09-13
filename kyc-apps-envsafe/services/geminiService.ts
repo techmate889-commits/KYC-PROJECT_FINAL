@@ -3,12 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai"; // ✅ correct SDK
 import { ProfileData } from "../types";
-import { fetchInstagramCounts } from "./instagramService"; // ✅ NEW
+import { fetchInstagramCounts } from "./instagramService";
 
 /**
- * Extract valid JSON object from model output
+ * Extract valid JSON object from model output.
  */
 const cleanJsonString = (jsonString: string): string => {
   const firstBrace = jsonString.indexOf("{");
@@ -19,12 +19,12 @@ const cleanJsonString = (jsonString: string): string => {
 
 /**
  * Fetches a comprehensive client profile using an Instagram handle.
- * Combines Gemini (enriched info) + RapidAPI (exact counts).
+ * Combines Gemini enrichment + our scraper counts.
  */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+  const ai = new GoogleGenerativeAI(process.env.API_KEY!);
 
   const prompt = `
 You are an expert KYC analyst. Your job is to build a complete, verified profile of a client using their Instagram handle.
@@ -33,26 +33,46 @@ You are an expert KYC analyst. Your job is to build a complete, verified profile
 - Never guess or invent information.
 - If data cannot be confirmed, set the value to "Not Publicly Available".
 - Always return valid JSON with all required keys.
-- Only use publicly available, verifiable information (Instagram, bio links, LinkedIn, company websites, news, etc).
 - Output must be JSON only. No extra text.
 
 Instagram Handle to analyze: "${handle}"
-(keep your schema block here unchanged)
+
+Required Schema:
+{
+  "instagramUsername": string,
+  "instagramHandle": string,
+  "fullName": string,
+  "dateOfBirth": string | "Not Publicly Available",
+  "profilePictureUrl": string | "Not Publicly Available",
+  "profession": string | "Not Publicly Available",
+  "education": string | "Not Publicly Available",
+  "interests": [string] | [],
+  "familyInfo": string | "Not Publicly Available",
+  "country": string | "Not Publicly Available",
+  "location": string | "Not Publicly Available",
+  "businessName": string | "Not Publicly Available",
+  "businessType": string | "Not Publicly Available",
+  "businessWebsite": string | "Not Publicly Available",
+  "businessOverview": string | "Not Publicly Available",
+  "instagramFollowers": string,
+  "instagramFollowing": string,
+  "instagramPostsCount": string,
+  "intro": string
+}
 `;
 
   console.log("Sending strict KYC prompt to Gemini...");
 
-  const response: GenerateContentResponse = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-    config: {
-      tools: [{ googleSearch: {} }],
-      temperature: 0.0,
-    },
-  });
+  const response = await ai
+    .getGenerativeModel({ model: "gemini-1.5-flash" })
+    .generateContent(prompt);
+
+  // Gemini SDK response format
+  const rawText =
+    response.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
   try {
-    const jsonText = cleanJsonString(response.text);
+    const jsonText = cleanJsonString(rawText);
     if (!jsonText) {
       throw new Error("The AI response did not contain a valid JSON object.");
     }
@@ -71,28 +91,25 @@ Instagram Handle to analyze: "${handle}"
       lastFetched: new Date().toISOString(),
     };
 
-    // ✅ Inject exact counts from RapidAPI
+    // ✅ Merge scraper counts
     try {
-      const cleanUsername = username.replace(/^@/, ""); // strip @ if present
-      const counts = await fetchInstagramCounts(cleanUsername);
-
-      console.log("🔍 RapidAPI counts merged for", cleanUsername, counts);
-
+      const counts = await fetchInstagramCounts(username);
       if (counts) {
         profileData.instagramFollowers = counts.followers.toString();
         profileData.instagramFollowing = counts.following.toString();
         profileData.instagramPostsCount = counts.posts.toString();
+        if (counts.profilePic) profileData.profilePictureUrl = counts.profilePic;
+        if (counts.fullName) profileData.fullName = counts.fullName;
+        if (counts.bio) profileData.intro = counts.bio;
       }
     } catch (err) {
-      console.warn("⚠️ Could not fetch exact Instagram counts:", err);
+      console.warn("⚠️ Scraper failed, keeping Gemini values:", err);
     }
 
     console.log("✅ Final merged KYC profile:", profileData);
     return profileData;
   } catch (e) {
-    console.error("❌ Failed to parse JSON response:", response.text, e);
-    throw new Error(
-      "The AI returned data in an unexpected format. This may be due to private or complex profile."
-    );
+    console.error("❌ Failed to parse JSON response:", rawText, e);
+    throw new Error("AI returned invalid data. Profile may be private or complex.");
   }
 };
