@@ -56,15 +56,14 @@ function formatDOBWithAge(dob?: string): string {
   return `${dob} (Age: ${age})`;
 }
 
-// ✅ Handles multiple URLs / comma-separated links
+// ✅ Split & clean multiple URLs
 const renderWebsiteLinks = (urls: string) => {
   if (!urls || urls === "Not Publicly Available") return "Not Publicly Available";
 
-  // Split by space, comma, or newline → clean → unique
   const urlArray = urls
     .split(/[\s,]+/)
     .map(u => u.trim())
-    .filter(u => u.length > 0 && (u.startsWith("http://") || u.startsWith("https://")));
+    .filter(u => u.startsWith("http://") || u.startsWith("https://"));
 
   if (urlArray.length === 0) return urls;
 
@@ -81,7 +80,7 @@ const renderWebsiteLinks = (urls: string) => {
   );
 };
 
-// ✅ Handles comma-separated values like "music art travel"
+// ✅ Normalize comma/space separated values
 const normalizeList = (value: string | string[] | undefined): string[] => {
   if (!value) return [];
   if (Array.isArray(value)) return value;
@@ -94,23 +93,22 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
 
   const publicPosts = profile.latestPosts?.filter(p => p.engagement !== "Not Publicly Available");
 
-  /* --- EXPORT PDF (unchanged except website & interests cleaning) --- */
+  /* --- PDF EXPORT --- */
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const FONT = 'Helvetica';
-      const FONT_SIZES = { title: 22, heading: 16, subHeading: 12, body: 10, footer: 8 };
-      const MARGINS = { top: 20, bottom: 20, left: 20, right: 20 };
+      const FONT_SIZES = { title: 22, heading: 16, body: 10 };
+      const MARGINS = { top: 20, left: 20, right: 20 };
       const PAGE_WIDTH = pdf.internal.pageSize.getWidth();
-      const PAGE_HEIGHT = pdf.internal.pageSize.getHeight();
       const contentWidth = PAGE_WIDTH - MARGINS.left - MARGINS.right;
       let yPos = MARGINS.top;
 
-      const renderInfoItem = (label: string, value?: string) => {
+      const renderInfoItem = (label: string, value?: string | string[]) => {
         if (!value || value === 'Not Publicly Available') return;
         const cleanVal = Array.isArray(value) ? value.join(", ") : value;
-        const valueLines = pdf.splitTextToSize(String(cleanVal), contentWidth - 35);
+        const valueLines = pdf.splitTextToSize(cleanVal, contentWidth - 35);
         pdf.setFont(FONT, 'bold');
         pdf.setFontSize(FONT_SIZES.body);
         pdf.text(label + ':', MARGINS.left, yPos);
@@ -132,7 +130,8 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
       renderInfoItem('Profession', profile.profession);
       renderInfoItem('Education', profile.education);
       renderInfoItem('Location', `${profile.location}, ${profile.country}`);
-      renderInfoItem('Interests', normalizeList(profile.interests).join(", "));
+      renderInfoItem('Interests', normalizeList(profile.interests));
+      renderInfoItem('Income / Net Worth', profile.incomeOrNetWorth);
       renderInfoItem('Business Website', profile.businessWebsite);
 
       pdf.save(`${(profile.fullName || 'kyc-report').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`);
