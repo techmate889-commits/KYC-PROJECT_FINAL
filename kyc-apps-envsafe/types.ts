@@ -1,67 +1,56 @@
-// types.ts
-// Central type definitions for the KYC System
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 export interface ProfileData {
-  // --- Basic Identity ---
+  id: string;
   instagramUsername: string;
-  instagramHandle: string;        // can be same as username or numeric ID
+  instagramHandle: string;
   fullName: string;
-  dateOfBirth?: string;           // e.g. "1995-02-12"
-  age?: number;                   // auto-calculated
-  profilePictureUrl?: string;
-
-  // --- Personal Info ---
-  profession?: string;
-  education?: string;
-  interests?: string[];
-  familyInfo?: string;
-  country?: string;
-  location?: string;              // City/Region
-
-  // --- Business Info ---
-  businessName?: string;
-  businessType?: "Product" | "Service" | "Coaching" | "Other";
-  businessWebsite?: string;
-  businessOverview?: string;
-  businessAccountId?: string;
-
-  // --- Instagram Stats ---
+  dateOfBirth: string;
+  age: number | null;
+  profilePictureUrl: string;
+  profession: string;
+  education: string;
+  interests: string[];
+  familyInfo: string;
+  country: string;
+  location: string;
+  businessName: string;
+  businessType: string;
+  businessWebsite: string;
+  businessOverview: string;
+  businessAccountId: string;
   instagramFollowers: string;
   instagramFollowing: string;
   instagramPostsCount: string;
-  engagementRatio?: string;       // %
-  postFrequency?: string;         // e.g. "3 posts/week"
-  contentType?: "Personal" | "Business" | "Random";
-  contentQuality?: {
-    rating: "High" | "Medium" | "Low";
-    notes?: string;
+  engagementRatio: string;
+  postFrequency: string;
+  contentType: string;
+  contentQuality: {
+    rating: string;
+    notes: string;
   };
-
-  // --- Latest Posts ---
-  latestPosts?: {
-    caption?: string;
-    likes?: number;
-    comments?: number;
-    views?: number;
-    engagement?: string;          // formatted: "Likes: X, Comments: Y, Views: Z"
-    postedAt?: string;            // timestamp
+  latestPosts: {
+    caption: string;
+    likes: number | null;
+    comments: number | null;
+    views: number | null;
+    engagement: string;
+    postedAt: string;
   }[];
-
-  // --- External Links & Accounts ---
-  otherSocialMedia?: {
-    platform: string;             // e.g. Twitter, LinkedIn, YouTube
+  otherSocialMedia: {
+    platform: string;
     handle: string;
-    followers?: string;
-    url?: string;
+    followers: string;
+    url: string;
   }[];
-
-  // --- Recognition ---
-  awards?: string;
-  mediaCoverage?: string | string[]; // plain text or list of article links
-
-  // --- AI/Enrichment Fields ---
-  intro?: string;                 // Executive summary auto-generated
-  enrichedSources?: string[];     // list of sources used (IG, LinkedIn, Google News, etc.)
-  confidenceScore?: number;       // 0-100 → how confident the system is
-  lastFetched: string;            // timestamp
+  awards: string;
+  mediaCoverage: string | string[];
+  incomeOrNetWorth: string;  // ✅ NEW FIELD
+  intro: string;
+  enrichedSources: string[];
+  confidenceScore: number;
+  lastFetched: string;
 }
