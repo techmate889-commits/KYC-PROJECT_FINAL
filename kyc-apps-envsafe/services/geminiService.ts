@@ -28,11 +28,22 @@ export const fetchClientProfile = async (
   const prompt = `
 You are an expert KYC analyst. Build a verified profile of a client using their Instagram handle.
 
-⚠️ RULES:
-- Do NOT guess or invent.
-- If data cannot be found, set "Not Publicly Available".
-- Followers, Following, and Posts are handled separately — do NOT include them in the JSON.
-- Output must be valid JSON only. No extra text.
+⚠️ STRICT RULES:
+- Never guess or invent.
+- If data cannot be confirmed from trusted, publicly available sources, set "Not Publicly Available".
+- Followers, Following, and Posts are EXCLUDED (handled separately).
+- Output must be valid JSON only. No explanations, no markdown.
+- Always cross-check information across at least two reliable sources before including it.
+
+📌 Sources you must prioritize (in order of trust):
+1. Instagram bio links (websites, YouTube, LinkedIn, Twitter, Facebook).
+2. LinkedIn profiles (employment, education, skills).
+3. Official company websites, Crunchbase, AngelList (Wellfound).
+4. Other social media (Twitter, YouTube, TikTok, Facebook) if public.
+5. News and press (Forbes, Bloomberg, Reuters, Business Insider).
+6. Wikipedia, Wikidata, or other public registries.
+7. University / academic websites, Google Scholar, ResearchGate.
+8. Verified award sites (e.g., Forbes 30 Under 30, industry awards).
 
 Instagram Handle: "${handle}"
 
@@ -67,12 +78,14 @@ Required Schema:
   ],
   "awards": string | "Not Publicly Available",
   "mediaCoverage": string | [string] | "Not Publicly Available",
+  "incomeOrNetWorth": string | "Not Publicly Available",  // ⚡ NEW FIELD
   "intro": string,
-  "enrichedSources": [string],
-  "confidenceScore": number,
+  "enrichedSources": [string], // list all sources used
+  "confidenceScore": number, // 0–100, based on evidence strength
   "lastFetched": string
 }
 `;
+
 
   console.log("🚀 Sending KYC prompt to Gemini...");
 
