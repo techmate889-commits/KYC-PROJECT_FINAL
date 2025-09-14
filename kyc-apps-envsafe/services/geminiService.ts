@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai"; // ✅ keep old working SDK
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
 
@@ -18,12 +18,12 @@ const cleanJsonString = (jsonString: string): string => {
 };
 
 /**
- * Fetch client profile using Gemini (qualitative) + Instagram scraper (counts)
+ * Fetch client profile using Gemini (qualitative) + Scraper (counts)
  */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
-  const ai = new GoogleGenerativeAI({ apiKey: process.env.API_KEY! });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
   const prompt = `
 You are an expert KYC analyst. Build a verified profile of a client using their Instagram handle.
@@ -76,15 +76,17 @@ Required Schema:
 
   console.log("🚀 Sending KYC prompt to Gemini...");
 
-  const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
-  const response = await model.generateContent(prompt);
-
-  // Extract raw Gemini output
-  const rawText =
-    response.response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  const response: GenerateContentResponse = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+    contents: prompt,
+    config: {
+      tools: [{ googleSearch: {} }],
+      temperature: 0.0,
+    },
+  });
 
   try {
-    const jsonText = cleanJsonString(rawText);
+    const jsonText = cleanJsonString(response.text);
     if (!jsonText) throw new Error("No valid JSON from Gemini");
 
     const data: Omit<ProfileData, "id" | "lastFetched"> = JSON.parse(jsonText);
@@ -104,7 +106,7 @@ Required Schema:
       instagramPostsCount: "Not Publicly Available",
     };
 
-    // ✅ Always enrich with scraper counts
+    // ✅ Always enrich with our scraper
     try {
       const counts = await fetchInstagramCounts(username);
       if (counts) {
@@ -122,7 +124,7 @@ Required Schema:
     console.log("✅ Final merged KYC profile:", profileData);
     return profileData;
   } catch (e) {
-    console.error("❌ Failed to parse JSON:", rawText, e);
+    console.error("❌ Failed to parse JSON:", response.text, e);
     throw new Error("AI returned invalid data. Profile may be private or complex.");
   }
 };
