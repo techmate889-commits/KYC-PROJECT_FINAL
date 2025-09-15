@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- */
+*/
 
 import React, { useState } from "react";
 import { ProfileData } from "../types";
@@ -90,7 +90,6 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
   if (!profile) return null;
 
   const publicPosts = profile.latestPosts?.filter((p) => p.engagement !== "Not Publicly Available");
-  const scrapedPosts = profile.recentPosts || []; // ✅ from scraper
 
   /* --- PDF EXPORT --- */
   const handleExportPDF = async () => {
@@ -152,7 +151,6 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <div className="text-center sm:text-left flex-1">
               <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{profile.fullName}</h2>
               <p className="text-lg sm:text-xl text-blue-500 dark:text-blue-400 font-medium">{profile.instagramUsername}</p>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400 italic">{profile.bio}</p> {/* ✅ Scraper bio */}
               <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 max-w-sm mx-auto sm:mx-0">
                   <StatItem label="Followers" value={profile.instagramFollowers} />
@@ -176,20 +174,48 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-base">{profile.intro}</p>
           </ReportSection>
 
-          {/* Instagram Recent Posts (Scraper) */}
-          <ReportSection title="Recent Instagram Posts" icon={<AtSymbolIcon className="h-5 w-5 mr-3 text-slate-400" />}>
-            {scrapedPosts.length > 0 ? (
+          {/* Personal Info */}
+          <ReportSection title="Personal Information" icon={<UserCircleIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+            <InfoItem label="Full Name" value={profile.fullName} />
+            <InfoItem label="Date of Birth" value={formatDOBWithAge(profile.dateOfBirth)} />
+            <InfoItem label="Profession" value={profile.profession} />
+            <InfoItem label="Education" value={profile.education} />
+            <InfoItem label="Location" value={`${profile.location}, ${profile.country}`} />
+            <InfoItem label="Family Info" value={profile.familyInfo} />
+            <InfoItem label="Interests" value={normalizeList(profile.interests).join(", ")} />
+            <InfoItem label="Income / Net Worth" value={profile.incomeOrNetWorth} />
+          </ReportSection>
+
+          {/* Business Info */}
+          <ReportSection title="Business Information" icon={<BriefcaseIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+            <InfoItem label="Business Name" value={profile.businessName} />
+            <InfoItem label="Business Type" value={profile.businessType} />
+            <InfoItem label="Website" value={renderWebsiteLinks(profile.businessWebsite)} />
+            <InfoItem label="Overview" value={profile.businessOverview} />
+          </ReportSection>
+
+          {/* Instagram Analysis */}
+          <ReportSection title="Instagram Analysis" icon={<ChartBarIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+            <InfoItem label="Handle" value={profile.instagramHandle} />
+            <InfoItem label="Engagement Ratio" value={profile.engagementRatio} />
+            <InfoItem label="Post Frequency" value={profile.postFrequency} />
+            <InfoItem label="Content Type" value={profile.contentType} />
+            <InfoItem label="Content Quality" value={profile.contentQuality?.rating} />
+            <InfoItem label="Notes" value={profile.contentQuality?.notes} />
+          </ReportSection>
+
+          {/* Latest Posts */}
+          <ReportSection title="Latest Posts Engagement" icon={<AtSymbolIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+            {publicPosts?.length > 0 ? (
               <ul className="space-y-2">
-                {scrapedPosts.map((post, i) => (
-                  <li key={i} className="text-sm text-slate-600 dark:text-slate-400">
-                    <strong>Post {i + 1}:</strong> {post.caption || "(No caption)"} <br />
-                    ❤️ {post.likes} · 💬 {post.comments} {post.views ? `· ▶️ ${post.views} views` : ""} <br />
-                    <span className="text-xs text-slate-500">{new Date(post.postedAt).toLocaleDateString()}</span>
+                {publicPosts.map((post, index) => (
+                  <li key={index} className="text-sm text-slate-600 dark:text-slate-400">
+                    <strong>Post {index + 1}:</strong> {post.engagement}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-slate-500 dark:text-slate-400 italic">No recent post data available.</p>
+              <p className="text-slate-500 dark:text-slate-400 italic">No public post engagement data available.</p>
             )}
           </ReportSection>
 
