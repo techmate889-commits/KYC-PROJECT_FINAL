@@ -69,13 +69,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           caption: node.edge_media_to_caption?.edges?.[0]?.node?.text || "",
           likes: node.edge_liked_by?.count || 0,
           comments: node.edge_media_to_comment?.count || 0,
-          views: node.video_view_count || null,
+          views: node.video_view_count ?? null,
           postedAt: node.taken_at_timestamp
             ? new Date(node.taken_at_timestamp * 1000).toISOString()
             : "",
         };
       }) || [];
 
+    // ✅ Unified response schema
     const responseData = {
       username: user.username,
       fullName: user.full_name || "",
