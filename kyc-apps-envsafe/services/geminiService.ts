@@ -18,7 +18,7 @@ const cleanJsonString = (jsonString: string): string => {
 };
 
 /**
- * Fetch client profile using Gemini (qualitative) + Scraper (counts)
+ * Fetch client profile using Gemini (qualitative) + Scraper (followers/following/posts)
  */
 export const fetchClientProfile = async (
   handle: string
@@ -78,14 +78,13 @@ Required Schema:
   ],
   "awards": string | "Not Publicly Available",
   "mediaCoverage": string | [string] | "Not Publicly Available",
-  "incomeOrNetWorth": string | "Not Publicly Available",  // ⚡ NEW FIELD
+  "incomeOrNetWorth": string | "Not Publicly Available",
   "intro": string,
-  "enrichedSources": [string], // list all sources used
-  "confidenceScore": number, // 0–100, based on evidence strength
+  "enrichedSources": [string],
+  "confidenceScore": number,
   "lastFetched": string
 }
 `;
-
 
   console.log("🚀 Sending KYC prompt to Gemini...");
 
@@ -114,22 +113,25 @@ Required Schema:
       ...data,
       id: username,
       lastFetched: new Date().toISOString(),
-      instagramFollowers: "Not Publicly Available", // placeholder
+      instagramFollowers: "Not Publicly Available",
       instagramFollowing: "Not Publicly Available",
       instagramPostsCount: "Not Publicly Available",
     };
 
-  // ✅ Always enrich with our scraper
-try {
-  const counts = await fetchInstagramCounts(username);
-  if (counts) {
-    profileData.instagramFollowers = counts.followers.toString();
-    profileData.instagramFollowing = counts.following.toString();
-    profileData.instagramPostsCount = counts.posts.toString();
-  }
-} catch (scraperErr) {
-  console.warn("⚠️ Scraper enrichment failed:", scraperErr);
-}
+    // ✅ Always enrich with our scraper
+    try {
+      const counts = await fetchInstagramCounts(username);
+      if (counts) {
+        profileData.instagramFollowers = counts.followers.toString();
+        profileData.instagramFollowing = counts.following.toString();
+        profileData.instagramPostsCount = counts.posts.toString();
+        if (counts.profilePic) profileData.profilePictureUrl = counts.profilePic;
+        if (counts.fullName) profileData.fullName = counts.fullName;
+        if (counts.bio) profileData.intro = counts.bio;
+      }
+    } catch (scraperErr) {
+      console.warn("⚠️ Scraper enrichment failed:", scraperErr);
+    }
 
     console.log("✅ Final merged KYC profile:", profileData);
     return profileData;
