@@ -7,10 +7,7 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
 
-/** 
- * Extracts a valid JSON object from model output text.
- * It assumes the JSON starts with the first `{` and ends with the last `}`.
- */
+/** Extract valid JSON object from model output */
 const cleanJsonString = (jsonString: string): string => {
   const firstBrace = jsonString.indexOf("{");
   const lastBrace = jsonString.lastIndexOf("}");
@@ -18,13 +15,7 @@ const cleanJsonString = (jsonString: string): string => {
   return jsonString.substring(firstBrace, lastBrace + 1);
 };
 
-/**
- * Fetch a client profile using:
- * - Google Gemini (for qualitative enrichment)
- * - Instagram scraper (for numerical stats)
- * 
- * Merges both responses into a consistent ProfileData object.
- */
+/** Fetch client profile using Gemini (qualitative) + Scraper (counts) */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
@@ -82,7 +73,7 @@ Required Schema:
 
   console.log("🚀 Running Gemini + Scraper in parallel...");
 
-  // 🔹 Run both Gemini and Scraper in parallel
+  // 🔹 Run Gemini + Scraper at the same time
   const [geminiResponse, counts] = await Promise.allSettled([
     ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -92,14 +83,9 @@ Required Schema:
         temperature: 0.0,
       },
     }),
-    fetchInstagramCounts(
-      handle
-        .replace(/^https?:\/\/(www\.)?instagram\.com\//, "")
-        .replace(/\/$/, "")
-    ),
+    fetchInstagramCounts(handle.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, ""))
   ]);
 
-  // Handle Gemini response
   let baseData: any = {};
   if (geminiResponse.status === "fulfilled") {
     try {
@@ -115,14 +101,12 @@ Required Schema:
     console.warn("⚠️ Gemini request failed:", geminiResponse.reason);
   }
 
-  // Default username fallback
   const username =
     typeof baseData.instagramUsername === "string" &&
     baseData.instagramUsername !== "Not Publicly Available"
       ? baseData.instagramUsername.replace("@", "")
       : handle;
 
-  // Build the profile object
   const profileData: ProfileData = {
     ...baseData,
     id: username,
@@ -132,13 +116,10 @@ Required Schema:
     instagramPostsCount: "Not Publicly Available",
   };
 
-  // Handle Scraper response
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
     profileData.instagramPostsCount = counts.value.posts.toString();
-
-    // Optionally enrich base data with scraper values
     if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
     if (counts.value.fullName) profileData.fullName = counts.value.fullName;
     if (counts.value.bio) profileData.intro = counts.value.bio;
