@@ -61,6 +61,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: "User data not available" });
     }
 
+    // ✅ Extract last 5 posts with engagement
+    const posts =
+      user.edge_owner_to_timeline_media?.edges?.slice(0, 5).map((edge: any) => {
+        const node = edge.node;
+        return {
+          caption: node.edge_media_to_caption?.edges?.[0]?.node?.text || "",
+          likes: node.edge_liked_by?.count || 0,
+          comments: node.edge_media_to_comment?.count || 0,
+          views: node.video_view_count || null,
+          postedAt: node.taken_at_timestamp
+            ? new Date(node.taken_at_timestamp * 1000).toISOString()
+            : "",
+        };
+      }) || [];
+
     const responseData = {
       username: user.username,
       fullName: user.full_name || "",
@@ -71,6 +86,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       profilePic: user.profile_pic_url_hd || user.profile_pic_url || "",
       isPrivate: user.is_private || false,
       isVerified: user.is_verified || false,
+      recentPosts: posts,
     };
 
     res.setHeader(
