@@ -3,13 +3,11 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai"; // ✅ keep old working SDK
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
 
-/**
- * Extract valid JSON object from model output
- */
+/** Extract valid JSON object from model output */
 const cleanJsonString = (jsonString: string): string => {
   const firstBrace = jsonString.indexOf("{");
   const lastBrace = jsonString.lastIndexOf("}");
@@ -17,9 +15,7 @@ const cleanJsonString = (jsonString: string): string => {
   return jsonString.substring(firstBrace, lastBrace + 1);
 };
 
-/**
- * Fetch client profile using Gemini (qualitative) + Scraper (followers/following/posts)
- */
+/** Fetch client profile using Gemini (qualitative) + Scraper (counts) */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
@@ -33,17 +29,6 @@ You are an expert KYC analyst. Build a verified profile of a client using their 
 - If data cannot be confirmed from trusted, publicly available sources, set "Not Publicly Available".
 - Followers, Following, and Posts are EXCLUDED (handled separately).
 - Output must be valid JSON only. No explanations, no markdown.
-- Always cross-check information across at least two reliable sources before including it.
-
-📌 Sources you must prioritize (in order of trust):
-1. Instagram bio links (websites, YouTube, LinkedIn, Twitter, Facebook).
-2. LinkedIn profiles (employment, education, skills).
-3. Official company websites, Crunchbase, AngelList (Wellfound).
-4. Other social media (Twitter, YouTube, TikTok, Facebook) if public.
-5. News and press (Forbes, Bloomberg, Reuters, Business Insider).
-6. Wikipedia, Wikidata, or other public registries.
-7. University / academic websites, Google Scholar, ResearchGate.
-8. Verified award sites (e.g., Forbes 30 Under 30, industry awards).
 
 Instagram Handle: "${handle}"
 
@@ -86,57 +71,62 @@ Required Schema:
 }
 `;
 
-  console.log("🚀 Sending KYC prompt to Gemini...");
+  console.log("🚀 Running Gemini + Scraper in parallel...");
 
-  const response: GenerateContentResponse = await ai.models.generateContent({
-    model: "gemini-2.5-flash",
-    contents: prompt,
-    config: {
-      tools: [{ googleSearch: {} }],
-      temperature: 0.0,
-    },
-  });
+  // 🔹 Run Gemini + Scraper at the same time
+  const [geminiResponse, counts] = await Promise.allSettled([
+    ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        temperature: 0.0,
+      },
+    }),
+    fetchInstagramCounts(handle.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, ""))
+  ]);
 
-  try {
-    const jsonText = cleanJsonString(response.text);
-    if (!jsonText) throw new Error("No valid JSON from Gemini");
-
-    const data: Omit<ProfileData, "id" | "lastFetched"> = JSON.parse(jsonText);
-
-    const username =
-      typeof data.instagramUsername === "string" &&
-      data.instagramUsername !== "Not Publicly Available"
-        ? data.instagramUsername.replace("@", "")
-        : handle;
-
-    const profileData: ProfileData = {
-      ...data,
-      id: username,
-      lastFetched: new Date().toISOString(),
-      instagramFollowers: "Not Publicly Available",
-      instagramFollowing: "Not Publicly Available",
-      instagramPostsCount: "Not Publicly Available",
-    };
-
-    // ✅ Always enrich with our scraper
+  let baseData: any = {};
+  if (geminiResponse.status === "fulfilled") {
     try {
-      const counts = await fetchInstagramCounts(username);
-      if (counts) {
-        profileData.instagramFollowers = counts.followers.toString();
-        profileData.instagramFollowing = counts.following.toString();
-        profileData.instagramPostsCount = counts.posts.toString();
-        if (counts.profilePic) profileData.profilePictureUrl = counts.profilePic;
-        if (counts.fullName) profileData.fullName = counts.fullName;
-        if (counts.bio) profileData.intro = counts.bio;
+      const rawText = (geminiResponse.value as GenerateContentResponse).text;
+      const jsonText = cleanJsonString(rawText);
+      if (jsonText) {
+        baseData = JSON.parse(jsonText);
       }
-    } catch (scraperErr) {
-      console.warn("⚠️ Scraper enrichment failed:", scraperErr);
+    } catch (err) {
+      console.warn("⚠️ Gemini parsing failed:", err);
     }
-
-    console.log("✅ Final merged KYC profile:", profileData);
-    return profileData;
-  } catch (e) {
-    console.error("❌ Failed to parse JSON:", response.text, e);
-    throw new Error("AI returned invalid data. Profile may be private or complex.");
+  } else {
+    console.warn("⚠️ Gemini request failed:", geminiResponse.reason);
   }
+
+  const username =
+    typeof baseData.instagramUsername === "string" &&
+    baseData.instagramUsername !== "Not Publicly Available"
+      ? baseData.instagramUsername.replace("@", "")
+      : handle;
+
+  const profileData: ProfileData = {
+    ...baseData,
+    id: username,
+    lastFetched: new Date().toISOString(),
+    instagramFollowers: "Not Publicly Available",
+    instagramFollowing: "Not Publicly Available",
+    instagramPostsCount: "Not Publicly Available",
+  };
+
+  if (counts.status === "fulfilled" && counts.value) {
+    profileData.instagramFollowers = counts.value.followers.toString();
+    profileData.instagramFollowing = counts.value.following.toString();
+    profileData.instagramPostsCount = counts.value.posts.toString();
+    if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
+    if (counts.value.fullName) profileData.fullName = counts.value.fullName;
+    if (counts.value.bio) profileData.intro = counts.value.bio;
+  } else {
+    console.warn("⚠️ Scraper failed:", counts);
+  }
+
+  console.log("✅ Final merged profile:", profileData);
+  return profileData;
 };
