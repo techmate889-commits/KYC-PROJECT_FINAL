@@ -9,9 +9,6 @@ import jsPDF from 'jspdf';
 import {
   UserCircleIcon,
   BriefcaseIcon,
-  ChartBarIcon,
-  AtSymbolIcon,
-  MegaphoneIcon,
   GlobeAltIcon,
   DocumentDownloadIcon,
 } from './icons';
@@ -56,7 +53,7 @@ function formatDOBWithAge(dob?: string): string {
   return `${dob} (Age: ${age})`;
 }
 
-// ✅ Split & clean multiple URLs
+// ✅ Clean multiple links
 const renderWebsiteLinks = (urls: string) => {
   if (!urls || urls === "Not Publicly Available") return "Not Publicly Available";
 
@@ -80,7 +77,7 @@ const renderWebsiteLinks = (urls: string) => {
   );
 };
 
-// ✅ Normalize comma/space separated values
+// ✅ Normalize comma/pipe separated values
 const normalizeList = (value: string | string[] | undefined): string[] => {
   if (!value) return [];
   if (Array.isArray(value)) return value;
@@ -90,8 +87,6 @@ const normalizeList = (value: string | string[] | undefined): string[] => {
 const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
   const [isExporting, setIsExporting] = useState(false);
   if (!profile) return null;
-
-  const publicPosts = profile.latestPosts?.filter(p => p.engagement !== "Not Publicly Available");
 
   /* --- PDF EXPORT --- */
   const handleExportPDF = async () => {
@@ -131,7 +126,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
       renderInfoItem('Education', profile.education);
       renderInfoItem('Location', `${profile.location}, ${profile.country}`);
       renderInfoItem('Interests', normalizeList(profile.interests));
-      renderInfoItem('Income / Net Worth', profile.incomeOrNetWorth);
+      renderInfoItem('Income / Net Worth', profile.incomeOrNetWorth); // ✅ Added
       renderInfoItem('Business Website', profile.businessWebsite);
 
       pdf.save(`${(profile.fullName || 'kyc-report').replace(/[^a-z0-9]/gi, '_').toLowerCase()}_report.pdf`);
@@ -180,7 +175,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <InfoItem label="Education" value={profile.education} />
             <InfoItem label="Location" value={`${profile.location}, ${profile.country}`} />
             <InfoItem label="Interests" value={normalizeList(profile.interests).join(", ")} />
-            <InfoItem label="Income / Net Worth" value={profile.incomeOrNetWorth} />
+            <InfoItem label="Income / Net Worth" value={profile.incomeOrNetWorth} /> {/* ✅ Added */}
           </ReportSection>
 
           {/* Business Info */}
