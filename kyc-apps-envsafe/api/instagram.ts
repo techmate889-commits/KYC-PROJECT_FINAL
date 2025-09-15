@@ -25,19 +25,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const searchParams = new URLSearchParams({ username });
-    const response = await fetch(`${API_URL}?${searchParams}`, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json, text/javascript, */*; q=0.01",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": `https://www.instagram.com/${username}/`,
-        "X-IG-App-ID": INSTAGRAM_APP_ID,
-        "X-Requested-With": "XMLHttpRequest",
-        "Connection": "keep-alive",
-      },
-      signal: AbortSignal.timeout(10000),
-    });
+
+    const response = await fetch(
+      `${API_URL}?${searchParams}`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/javascript, */*; q=0.01",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Referer": `https://www.instagram.com/${username}/`,
+          "X-IG-App-ID": INSTAGRAM_APP_ID,
+          "X-Requested-With": "XMLHttpRequest",
+          "Connection": "keep-alive",
+        },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
 
     if (response.status === 404) {
       return res.status(404).json({ error: "User not found" });
@@ -61,22 +65,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: "User data not available" });
     }
 
-    // ✅ Extract last 5 posts with engagement
-    const posts =
-      user.edge_owner_to_timeline_media?.edges?.slice(0, 5).map((edge: any) => {
-        const node = edge.node;
-        return {
-          caption: node.edge_media_to_caption?.edges?.[0]?.node?.text || "",
-          likes: node.edge_liked_by?.count || 0,
-          comments: node.edge_media_to_comment?.count || 0,
-          views: node.video_view_count ?? null,
-          postedAt: node.taken_at_timestamp
-            ? new Date(node.taken_at_timestamp * 1000).toISOString()
-            : "",
-        };
-      }) || [];
-
-    // ✅ Unified response schema
     const responseData = {
       username: user.username,
       fullName: user.full_name || "",
@@ -87,13 +75,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       profilePic: user.profile_pic_url_hd || user.profile_pic_url || "",
       isPrivate: user.is_private || false,
       isVerified: user.is_verified || false,
-      recentPosts: posts,
     };
 
     res.setHeader(
       "Cache-Control",
       "public, s-maxage=300, stale-while-revalidate=600"
     );
+
     return res.json(responseData);
   } catch (err: any) {
     console.error("Scraper error:", err);
