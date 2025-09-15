@@ -20,7 +20,7 @@ export interface InstagramCounts {
 }
 
 /**
- * Fetch Instagram profile counts + details
+ * ✅ Exported function so geminiService can import it
  */
 export async function fetchInstagramCounts(
   username: string
