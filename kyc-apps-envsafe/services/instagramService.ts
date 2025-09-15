@@ -20,8 +20,7 @@ export interface InstagramCounts {
 }
 
 /**
- * Fetch Instagram profile counts + extra details
- * from our serverless API route (/api/instagram).
+ * Fetch Instagram profile counts + details
  */
 export async function fetchInstagramCounts(
   username: string
