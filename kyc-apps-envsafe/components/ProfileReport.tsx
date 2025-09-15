@@ -30,15 +30,12 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?:
   </div>
 );
 
-// ✅ always show "Not Publicly Available"
 const InfoItem: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => {
-  if (!value || (Array.isArray(value) && value.length === 0)) return null;
+  if (!value || value === "Not Publicly Available" || (Array.isArray(value) && value.length === 0)) return null;
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4">
       <span className="font-semibold text-slate-600 dark:text-slate-400 md:col-span-1">{label}:</span>
-      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">
-        {value}
-      </div>
+      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">{value}</div>
     </div>
   );
 };
@@ -107,7 +104,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
       let yPos = MARGINS.top;
 
       const renderInfoItem = (label: string, value?: string | string[]) => {
-        if (!value) return;
+        if (!value || value === "Not Publicly Available") return;
         const cleanVal = Array.isArray(value) ? value.join(", ") : value;
         const valueLines = pdf.splitTextToSize(cleanVal, contentWidth - 35);
         pdf.setFont(FONT, "bold");
@@ -174,7 +171,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
 
           {/* Executive Summary */}
           <ReportSection title="Executive Summary" icon={<BriefcaseIcon className="h-5 w-5 mr-3 text-slate-400" />}>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-base">{profile.intro || "Not Publicly Available"}</p>
+            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-base">{profile.intro}</p>
           </ReportSection>
 
           {/* Personal Info */}
@@ -185,7 +182,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <InfoItem label="Education" value={profile.education} />
             <InfoItem label="Location" value={`${profile.location}, ${profile.country}`} />
             <InfoItem label="Family Info" value={profile.familyInfo} />
-            <InfoItem label="Interests" value={normalizeList(profile.interests).join(", ") || "Not Publicly Available"} />
+            <InfoItem label="Interests" value={normalizeList(profile.interests).join(", ")} />
             <InfoItem label="Income / Net Worth" value={profile.incomeOrNetWorth} />
           </ReportSection>
 
@@ -203,22 +200,22 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <InfoItem label="Engagement Ratio" value={profile.engagementRatio} />
             <InfoItem label="Post Frequency" value={profile.postFrequency} />
             <InfoItem label="Content Type" value={profile.contentType} />
-            <InfoItem label="Content Quality" value={profile.contentQuality?.rating || "Not Publicly Available"} />
-            <InfoItem label="Notes" value={profile.contentQuality?.notes || "Not Publicly Available"} />
+            <InfoItem label="Content Quality" value={profile.contentQuality?.rating} />
+            <InfoItem label="Notes" value={profile.contentQuality?.notes} />
           </ReportSection>
 
           {/* Latest Posts */}
           <ReportSection title="Latest Posts Engagement" icon={<AtSymbolIcon className="h-5 w-5 mr-3 text-slate-400" />}>
-            {publicPosts && publicPosts.length > 0 ? (
+            {publicPosts?.length > 0 ? (
               <ul className="space-y-2">
                 {publicPosts.map((post, index) => (
                   <li key={index} className="text-sm text-slate-600 dark:text-slate-400">
-                    <strong>Post {index + 1}:</strong> {post.engagement || "Not Publicly Available"}
+                    <strong>Post {index + 1}:</strong> {post.engagement}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-slate-500 dark:text-slate-400 italic">Not Publicly Available</p>
+              <p className="text-slate-500 dark:text-slate-400 italic">No public post engagement data available.</p>
             )}
           </ReportSection>
 
@@ -227,14 +224,14 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             {profile.otherSocialMedia?.length > 0 ? (
               profile.otherSocialMedia.map((acc, index) => (
                 <div key={index}>
-                  <InfoItem label="Platform" value={acc.platform || "Not Publicly Available"} />
-                  <InfoItem label="Handle" value={acc.handle || "Not Publicly Available"} />
-                  <InfoItem label="Followers" value={acc.followers || "Not Publicly Available"} />
+                  <InfoItem label="Platform" value={acc.platform} />
+                  <InfoItem label="Handle" value={acc.handle} />
+                  <InfoItem label="Followers" value={acc.followers} />
                   <InfoItem label="URL" value={renderWebsiteLinks(acc.url)} />
                 </div>
               ))
             ) : (
-              <p className="text-slate-500 dark:text-slate-400 italic">Not Publicly Available</p>
+              <p className="text-slate-500 dark:text-slate-400 italic">No other public social media accounts found.</p>
             )}
           </ReportSection>
 
