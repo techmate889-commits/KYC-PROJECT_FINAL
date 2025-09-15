@@ -7,7 +7,10 @@ import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
 
-/** Extract valid JSON object from model output */
+/** 
+ * Extracts a valid JSON object from model output text.
+ * It assumes the JSON starts with the first `{` and ends with the last `}`.
+ */
 const cleanJsonString = (jsonString: string): string => {
   const firstBrace = jsonString.indexOf("{");
   const lastBrace = jsonString.lastIndexOf("}");
@@ -15,45 +18,13 @@ const cleanJsonString = (jsonString: string): string => {
   return jsonString.substring(firstBrace, lastBrace + 1);
 };
 
-/** Default values to ensure all fields exist */
-const defaultProfile: ProfileData = {
-  id: "",
-  instagramUsername: "Not Publicly Available",
-  instagramHandle: "Not Publicly Available",
-  fullName: "Not Publicly Available",
-  dateOfBirth: "Not Publicly Available",
-  age: null,
-  profilePictureUrl: "Not Publicly Available",
-  profession: "Not Publicly Available",
-  education: "Not Publicly Available",
-  interests: [],
-  familyInfo: "Not Publicly Available",
-  country: "Not Publicly Available",
-  location: "Not Publicly Available",
-  businessName: "Not Publicly Available",
-  businessType: "Not Publicly Available",
-  businessWebsite: "Not Publicly Available",
-  businessOverview: "Not Publicly Available",
-  businessAccountId: "Not Publicly Available",
-  engagementRatio: "Not Publicly Available",
-  postFrequency: "Not Publicly Available",
-  contentType: "Not Publicly Available",
-  contentQuality: { rating: "Not Publicly Available", notes: "Not Publicly Available" },
-  latestPosts: [],
-  otherSocialMedia: [],
-  awards: "Not Publicly Available",
-  mediaCoverage: "Not Publicly Available",
-  incomeOrNetWorth: "Not Publicly Available",
-  intro: "Not Publicly Available",
-  enrichedSources: [],
-  confidenceScore: 0,
-  lastFetched: "",
-  instagramFollowers: "Not Publicly Available",
-  instagramFollowing: "Not Publicly Available",
-  instagramPostsCount: "Not Publicly Available",
-};
-
-/** Fetch client profile using Gemini (qualitative) + Scraper (counts) */
+/**
+ * Fetch a client profile using:
+ * - Google Gemini (for qualitative enrichment)
+ * - Instagram scraper (for numerical stats)
+ * 
+ * Merges both responses into a consistent ProfileData object.
+ */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
@@ -111,7 +82,7 @@ Required Schema:
 
   console.log("🚀 Running Gemini + Scraper in parallel...");
 
-  // Run Gemini + Scraper at the same time
+  // 🔹 Run both Gemini and Scraper in parallel
   const [geminiResponse, counts] = await Promise.allSettled([
     ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -128,6 +99,7 @@ Required Schema:
     ),
   ]);
 
+  // Handle Gemini response
   let baseData: any = {};
   if (geminiResponse.status === "fulfilled") {
     try {
@@ -143,24 +115,30 @@ Required Schema:
     console.warn("⚠️ Gemini request failed:", geminiResponse.reason);
   }
 
+  // Default username fallback
   const username =
     typeof baseData.instagramUsername === "string" &&
     baseData.instagramUsername !== "Not Publicly Available"
       ? baseData.instagramUsername.replace("@", "")
       : handle;
 
-  // Merge defaults → Gemini → Scraper
-  let profileData: ProfileData = {
-    ...defaultProfile,
+  // Build the profile object
+  const profileData: ProfileData = {
     ...baseData,
     id: username,
     lastFetched: new Date().toISOString(),
+    instagramFollowers: "Not Publicly Available",
+    instagramFollowing: "Not Publicly Available",
+    instagramPostsCount: "Not Publicly Available",
   };
 
+  // Handle Scraper response
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
     profileData.instagramPostsCount = counts.value.posts.toString();
+
+    // Optionally enrich base data with scraper values
     if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
     if (counts.value.fullName) profileData.fullName = counts.value.fullName;
     if (counts.value.bio) profileData.intro = counts.value.bio;
