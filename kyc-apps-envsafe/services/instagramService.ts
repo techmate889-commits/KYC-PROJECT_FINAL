@@ -1,39 +1,15 @@
-export interface ProfileData {
-  id: string;
-  instagramUsername: string;
-  instagramHandle: string;
-  fullName: string;
-  dateOfBirth: string | "Not Publicly Available";
-  age?: number | null;
-  profilePictureUrl: string | "Not Publicly Available";
-  profession: string | "Not Publicly Available";
-  education: string | "Not Publicly Available";
-  interests: string[] | [];
-  familyInfo: string | "Not Publicly Available";
-  country: string | "Not Publicly Available";
-  location: string | "Not Publicly Available";
-  businessName: string | "Not Publicly Available";
-  businessType: string | "Not Publicly Available";
-  businessWebsite: string | "Not Publicly Available";
-  businessOverview: string | "Not Publicly Available";
-  businessAccountId: string | "Not Publicly Available";
-  engagementRatio: string | "Not Publicly Available";
-  postFrequency: string | "Not Publicly Available";
-  contentType: string | "Not Publicly Available";
-  contentQuality: { rating: string; notes: string };
-  otherSocialMedia: { platform: string; handle: string; followers: string; url: string }[];
-  awards: string | "Not Publicly Available";
-  mediaCoverage: string | [string] | "Not Publicly Available";
-  incomeOrNetWorth: string | "Not Publicly Available";
-  intro: string;
-  enrichedSources: string[];
-  confidenceScore: number;
-  lastFetched: string;
-  instagramFollowers: string;
-  instagramFollowing: string;
-  instagramPostsCount: string;
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
-  // ✅ New field
+export interface InstagramCounts {
+  followers: number;
+  following: number;
+  posts: number;
+  profilePic?: string;
+  fullName?: string;
+  bio?: string;
   recentPosts?: {
     caption: string;
     likes: number;
@@ -42,3 +18,34 @@ export interface ProfileData {
     postedAt: string;
   }[];
 }
+
+/**
+ * Fetch Instagram profile counts (and extras) from our serverless API route (/api/instagram).
+ */
+export async function fetchInstagramCounts(
+  username: string
+): Promise<InstagramCounts | null> {
+  try {
+    const res = await fetch(`/api/instagram?username=${encodeURIComponent(username)}`);
+    if (!res.ok) {
+      console.error("❌ Failed to fetch Instagram counts:", res.status, res.statusText);
+      return null;
+    }
+    const data = await res.json();
+
+    return {
+      followers: data.followers ?? 0,
+      following: data.following ?? 0,
+      posts: data.posts ?? 0,
+      profilePic: data.profilePic ?? "",
+      fullName: data.fullName ?? "",
+      bio: data.bio ?? "",
+      recentPosts: data.recentPosts ?? [],
+    };
+  } catch (err) {
+    console.error("⚠️ Client fetch error:", err);
+    return null;
+  }
+}
+
+export type { InstagramCounts };
