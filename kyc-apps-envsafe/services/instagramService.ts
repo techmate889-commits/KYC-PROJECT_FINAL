@@ -20,7 +20,8 @@ export interface InstagramCounts {
 }
 
 /**
- * Fetch Instagram profile counts (and extras) from our serverless API route (/api/instagram).
+ * Fetch Instagram profile counts + extra details
+ * from our serverless API route (/api/instagram).
  */
 export async function fetchInstagramCounts(
   username: string
@@ -31,21 +32,19 @@ export async function fetchInstagramCounts(
       console.error("❌ Failed to fetch Instagram counts:", res.status, res.statusText);
       return null;
     }
-    const data = await res.json();
 
+    const data = await res.json();
     return {
       followers: data.followers ?? 0,
       following: data.following ?? 0,
       posts: data.posts ?? 0,
-      profilePic: data.profilePic ?? "",
-      fullName: data.fullName ?? "",
-      bio: data.bio ?? "",
-      recentPosts: data.recentPosts ?? [],
+      profilePic: data.profilePic || "",
+      fullName: data.fullName || "",
+      bio: data.bio || "",
+      recentPosts: data.recentPosts || [],
     };
   } catch (err) {
     console.error("⚠️ Client fetch error:", err);
     return null;
   }
 }
-
-export type { InstagramCounts };
