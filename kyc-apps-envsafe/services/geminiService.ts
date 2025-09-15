@@ -115,7 +115,7 @@ Required Schema:
     instagramFollowing: "Not Publicly Available",
     instagramPostsCount: "Not Publicly Available",
   };
-
+ 
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
