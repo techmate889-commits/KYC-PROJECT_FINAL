@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
-import { fetchChatGPTProfile } from "./chatgptService"; // ⬅️ NEW
 
 /** Extract valid JSON object from model output */
 const cleanJsonString = (jsonString: string): string => {
@@ -16,60 +15,118 @@ const cleanJsonString = (jsonString: string): string => {
   return jsonString.substring(firstBrace, lastBrace + 1);
 };
 
-/** Fetch client profile using Gemini + ChatGPT + Instagram counts */
+/** Fetch client profile using Gemini (qualitative) + Scraper (counts) */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
-  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! }); // 🔑 make sure you rename API_KEY → GEMINI_API_KEY in Vercel
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
 
-  // Gemini prompt
   const prompt = `
 You are an expert KYC analyst. Build a verified profile of a client using their Instagram handle.
 
 ⚠️ STRICT RULES:
 - Never guess or invent.
 - If data cannot be confirmed from trusted, publicly available sources, set "Not Publicly Available".
-- Provide output strictly in JSON.
+- Followers, Following, and Posts are EXCLUDED (handled separately).
+- Output must be valid JSON only. No explanations, no markdown.
+
+Instagram Handle: "${handle}"
+
+Required Schema:
+{
+  "instagramUsername": string,
+  "instagramHandle": string,
+  "fullName": string,
+  "dateOfBirth": string | "Not Publicly Available",
+  "age": number | null,
+  "profilePictureUrl": string | "Not Publicly Available",
+  "profession": string | "Not Publicly Available",
+  "education": string | "Not Publicly Available",
+  "interests": [string] | [],
+  "familyInfo": string | "Not Publicly Available",
+  "country": string | "Not Publicly Available",
+  "location": string | "Not Publicly Available",
+  "businessName": string | "Not Publicly Available",
+  "businessType": string | "Not Publicly Available",
+  "businessWebsite": string | "Not Publicly Available",
+  "businessOverview": string | "Not Publicly Available",
+  "businessAccountId": string | "Not Publicly Available",
+  "engagementRatio": string | "Not Publicly Available",
+  "postFrequency": string | "Not Publicly Available",
+  "contentType": string | "Not Publicly Available",
+  "contentQuality": { "rating": string, "notes": string },
+  "latestPosts": [
+    { "caption": string, "likes": number | null, "comments": number | null, "views": number | null, "engagement": string, "postedAt": string }
+  ],
+  "otherSocialMedia": [
+    { "platform": string, "handle": string, "followers": string, "url": string }
+  ],
+  "awards": string | "Not Publicly Available",
+  "mediaCoverage": string | [string] | "Not Publicly Available",
+  "incomeOrNetWorth": string | "Not Publicly Available",
+  "intro": string,
+  "enrichedSources": [string],
+  "confidenceScore": number,
+  "lastFetched": string
+}
 `;
 
-  let geminiProfile: Partial<ProfileData> = {};
-  try {
-    const result = await ai.models.generateContent({
-      model: "gemini-1.5-pro", // adjust if needed
-      contents: [{ role: "user", parts: [{ text: `${prompt}\nHandle: ${handle}` }] }],
-    });
+  console.log("🚀 Running Gemini + Scraper in parallel...");
 
-    const text = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    const clean = cleanJsonString(text);
-    geminiProfile = clean ? JSON.parse(clean) : {};
-  } catch (err) {
-    console.error("Gemini fetch failed", err);
+  // 🔹 Run Gemini + Scraper at the same time
+  const [geminiResponse, counts] = await Promise.allSettled([
+    ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        tools: [{ googleSearch: {} }],
+        temperature: 0.0,
+      },
+    }),
+    fetchInstagramCounts(handle.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, ""))
+  ]);
+
+  let baseData: any = {};
+  if (geminiResponse.status === "fulfilled") {
+    try {
+      const rawText = (geminiResponse.value as GenerateContentResponse).text;
+      const jsonText = cleanJsonString(rawText);
+      if (jsonText) {
+        baseData = JSON.parse(jsonText);
+      }
+    } catch (err) {
+      console.warn("⚠️ Gemini parsing failed:", err);
+    }
+  } else {
+    console.warn("⚠️ Gemini request failed:", geminiResponse.reason);
   }
 
-  // ChatGPT profile
-  let chatgptProfile: Partial<ProfileData> = {};
-  try {
-    chatgptProfile = await fetchChatGPTProfile(handle);
-  } catch (err) {
-    console.error("ChatGPT fetch failed", err);
-  }
+  const username =
+    typeof baseData.instagramUsername === "string" &&
+    baseData.instagramUsername !== "Not Publicly Available"
+      ? baseData.instagramUsername.replace("@", "")
+      : handle;
 
-  // Instagram counts
-  let igCounts: Partial<ProfileData> = {};
-  try {
-    igCounts = await fetchInstagramCounts(handle);
-  } catch (err) {
-    console.error("Instagram fetch failed", err);
-  }
-
-  // Merge all sources
-  const profile: any = {
-    ...geminiProfile,
-    ...chatgptProfile,
-    ...igCounts,
-    id: handle,
-    lastUpdated: new Date().toISOString(),
+  const profileData: ProfileData = {
+    ...baseData,
+    id: username,
+    lastFetched: new Date().toISOString(),
+    instagramFollowers: "Not Publicly Available",
+    instagramFollowing: "Not Publicly Available",
+    instagramPostsCount: "Not Publicly Available",
   };
 
-  return profile as ProfileData;
+  if (counts.status === "fulfilled" && counts.value) {
+    profileData.instagramFollowers = counts.value.followers.toString();
+    profileData.instagramFollowing = counts.value.following.toString();
+    profileData.instagramPostsCount = counts.value.posts.toString();
+    if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
+    if (counts.value.fullName) profileData.fullName = counts.value.fullName;
+    if (counts.value.bio) profileData.intro = counts.value.bio;
+  } else {
+    console.warn("⚠️ Scraper failed:", counts);
+  }
+
+  console.log("✅ Final merged profile:", profileData);
+  return profileData;
 };
