@@ -14,6 +14,8 @@ import {
   MegaphoneIcon,
   GlobeAltIcon,
   DocumentDownloadIcon,
+  NewspaperIcon,
+  InfoIcon,
 } from "./icons";
 
 interface ProfileReportProps {
@@ -31,39 +33,41 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?:
 );
 
 const InfoItem: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => {
-  if (!value || value === "Not Publicly Available" || (Array.isArray(value) && value.length === 0)) return null;
+  let displayValue: any = value;
+  if (Array.isArray(value)) {
+    displayValue = value.length > 0 ? value.join(", ") : "Not Publicly Available";
+  }
+  if (!value) displayValue = "Not Publicly Available";
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4">
       <span className="font-semibold text-slate-600 dark:text-slate-400 md:col-span-1">{label}:</span>
-      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">{value}</div>
+      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">{displayValue}</div>
     </div>
   );
 };
 
 const StatItem: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="text-center">
-    <p className="text-2xl font-bold text-slate-800 dark:text-white">{value}</p>
+    <p className="text-2xl font-bold text-slate-800 dark:text-white">{value || "Not Publicly Available"}</p>
     <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{label}</p>
   </div>
 );
 
 /* --- Helpers --- */
-function formatDOBWithAge(dob?: string): string {
+function formatDOBWithAge(dob?: string, age?: number | null): string {
   if (!dob || dob === "Not Publicly Available") return "Not Publicly Available";
   const birth = new Date(dob);
   if (isNaN(birth.getTime())) return dob;
-  const age = new Date().getFullYear() - birth.getFullYear();
-  return `${dob} (Age: ${age})`;
+  const calcAge = age || new Date().getFullYear() - birth.getFullYear();
+  return `${dob} (Age: ${calcAge})`;
 }
 
-// Split & clean multiple URLs
 const renderWebsiteLinks = (urls: string) => {
   if (!urls || urls === "Not Publicly Available") return "Not Publicly Available";
   const urlArray = urls
     .split(/[\s,]+/)
     .map((u) => u.trim())
     .filter((u) => u.startsWith("http://") || u.startsWith("https://"));
-
   if (urlArray.length === 0) return urls;
   return (
     <ul className="space-y-1">
@@ -78,10 +82,9 @@ const renderWebsiteLinks = (urls: string) => {
   );
 };
 
-// Normalize comma/space separated values
 const normalizeList = (value: string | string[] | undefined): string[] => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value;
+  if (!value) return ["Not Publicly Available"];
+  if (Array.isArray(value)) return value.length ? value : ["Not Publicly Available"];
   return value.split(/[,|/]+/).map((v) => v.trim()).filter(Boolean);
 };
 
@@ -89,48 +92,13 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
   const [isExporting, setIsExporting] = useState(false);
   if (!profile) return null;
 
-  const publicPosts = profile.latestPosts?.filter((p) => p.engagement !== "Not Publicly Available");
+  const publicPosts = profile.latestPosts || [];
 
-  /* --- PDF EXPORT --- */
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
       const pdf = new jsPDF("p", "mm", "a4");
-      const FONT = "Helvetica";
-      const FONT_SIZES = { title: 22, heading: 16, body: 10 };
-      const MARGINS = { top: 20, left: 20, right: 20 };
-      const PAGE_WIDTH = pdf.internal.pageSize.getWidth();
-      const contentWidth = PAGE_WIDTH - MARGINS.left - MARGINS.right;
-      let yPos = MARGINS.top;
-
-      const renderInfoItem = (label: string, value?: string | string[]) => {
-        if (!value || value === "Not Publicly Available") return;
-        const cleanVal = Array.isArray(value) ? value.join(", ") : value;
-        const valueLines = pdf.splitTextToSize(cleanVal, contentWidth - 35);
-        pdf.setFont(FONT, "bold");
-        pdf.setFontSize(FONT_SIZES.body);
-        pdf.text(label + ":", MARGINS.left, yPos);
-        pdf.setFont(FONT, "normal");
-        pdf.text(valueLines, MARGINS.left + 35, yPos);
-        yPos += valueLines.length * 5 + 3;
-      };
-
-      // Title Page
-      pdf.setFont(FONT, "bold");
-      pdf.setFontSize(FONT_SIZES.title);
-      pdf.text("Client KYC Report", PAGE_WIDTH / 2, 80, { align: "center" });
-      pdf.setFontSize(FONT_SIZES.heading);
-      pdf.text(profile.fullName, PAGE_WIDTH / 2, 100, { align: "center" });
-
-      // Content
-      pdf.addPage();
-      renderInfoItem("Full Name", profile.fullName);
-      renderInfoItem("Profession", profile.profession);
-      renderInfoItem("Education", profile.education);
-      renderInfoItem("Location", `${profile.location}, ${profile.country}`);
-      renderInfoItem("Income / Net Worth", profile.incomeOrNetWorth);
-      renderInfoItem("Business Website", profile.businessWebsite);
-
+      pdf.text("Client KYC Report", 105, 20, { align: "center" });
       pdf.save(`${(profile.fullName || "kyc-report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`);
     } finally {
       setIsExporting(false);
@@ -149,8 +117,8 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
               <UserCircleIcon className="w-24 h-24 sm:w-28 sm:h-28 text-slate-300 dark:text-slate-600" />
             )}
             <div className="text-center sm:text-left flex-1">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{profile.fullName}</h2>
-              <p className="text-lg sm:text-xl text-blue-500 dark:text-blue-400 font-medium">{profile.instagramUsername}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{profile.fullName || "Not Publicly Available"}</h2>
+              <p className="text-lg sm:text-xl text-blue-500 dark:text-blue-400 font-medium">{profile.instagramUsername || "Not Publicly Available"}</p>
               <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 max-w-sm mx-auto sm:mx-0">
                   <StatItem label="Followers" value={profile.instagramFollowers} />
@@ -171,13 +139,13 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
 
           {/* Executive Summary */}
           <ReportSection title="Executive Summary" icon={<BriefcaseIcon className="h-5 w-5 mr-3 text-slate-400" />}>
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-base">{profile.intro}</p>
+            <InfoItem label="Intro" value={profile.intro} />
           </ReportSection>
 
           {/* Personal Info */}
           <ReportSection title="Personal Information" icon={<UserCircleIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Full Name" value={profile.fullName} />
-            <InfoItem label="Date of Birth" value={formatDOBWithAge(profile.dateOfBirth)} />
+            <InfoItem label="Date of Birth" value={formatDOBWithAge(profile.dateOfBirth, profile.age)} />
             <InfoItem label="Profession" value={profile.profession} />
             <InfoItem label="Education" value={profile.education} />
             <InfoItem label="Location" value={`${profile.location}, ${profile.country}`} />
@@ -191,7 +159,10 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <InfoItem label="Business Name" value={profile.businessName} />
             <InfoItem label="Business Type" value={profile.businessType} />
             <InfoItem label="Website" value={renderWebsiteLinks(profile.businessWebsite)} />
+            <InfoItem label="Website Title" value={profile.businessWebsiteInfo?.title} />
+            <InfoItem label="Website Description" value={profile.businessWebsiteInfo?.description} />
             <InfoItem label="Overview" value={profile.businessOverview} />
+            <InfoItem label="Business Account ID" value={profile.businessAccountId} />
           </ReportSection>
 
           {/* Instagram Analysis */}
@@ -206,16 +177,16 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
 
           {/* Latest Posts */}
           <ReportSection title="Latest Posts Engagement" icon={<AtSymbolIcon className="h-5 w-5 mr-3 text-slate-400" />}>
-            {publicPosts?.length > 0 ? (
+            {publicPosts.length > 0 ? (
               <ul className="space-y-2">
                 {publicPosts.map((post, index) => (
                   <li key={index} className="text-sm text-slate-600 dark:text-slate-400">
-                    <strong>Post {index + 1}:</strong> {post.engagement}
+                    <strong>Post {index + 1}:</strong> {post.caption || "Not Publicly Available"} | Likes: {post.likes ?? "N/A"} | Comments: {post.comments ?? "N/A"} | Views: {post.views ?? "N/A"} | Engagement: {post.engagement || "Not Publicly Available"} | Date: {post.postedAt || "Not Publicly Available"}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-slate-500 dark:text-slate-400 italic">No public post engagement data available.</p>
+              <p className="text-slate-500 dark:text-slate-400 italic">No posts available.</p>
             )}
           </ReportSection>
 
@@ -231,7 +202,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
                 </div>
               ))
             ) : (
-              <p className="text-slate-500 dark:text-slate-400 italic">No other public social media accounts found.</p>
+              <p className="text-slate-500 dark:text-slate-400 italic">Not Publicly Available</p>
             )}
           </ReportSection>
 
@@ -239,6 +210,26 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           <ReportSection title="Awards & Media" icon={<MegaphoneIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Awards" value={profile.awards} />
             <InfoItem label="Media Coverage" value={profile.mediaCoverage} />
+          </ReportSection>
+
+          {/* Recent News */}
+          <ReportSection title="Recent News" icon={<NewspaperIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+            {profile.recentNews?.length > 0 ? (
+              <ul className="space-y-1">
+                {profile.recentNews.map((news, i) => (
+                  <li key={i}>{news}</li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-slate-500 dark:text-slate-400 italic">Not Publicly Available</p>
+            )}
+          </ReportSection>
+
+          {/* Analysis & Sources */}
+          <ReportSection title="Analysis & Sources" icon={<InfoIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+            <InfoItem label="Confidence Score" value={profile.confidenceScore?.toString()} />
+            <InfoItem label="Enriched Sources" value={normalizeList(profile.enrichedSources).join(", ")} />
+            <InfoItem label="Last Fetched" value={profile.lastFetched} />
           </ReportSection>
         </div>
       </div>
