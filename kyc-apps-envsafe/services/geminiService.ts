@@ -174,20 +174,19 @@ Instagram Handle: "${handle}"
   const igCounts =
     counts.status === "fulfilled" && counts.value ? counts.value : {};
 
-  // Merge everything with defaults
+  // Merge Gemini + ChatGPT first
   let profileData: ProfileData = {
     ...buildDefaultProfile(handle),
-    ...safeMerge(geminiData, chatgptData, igCounts),
+    ...safeMerge(geminiData, chatgptData),
     lastFetched: new Date().toISOString(),
   };
 
-  // If IG counts provided, override follower/following/posts (+ optional enrichments)
+  // ✅ Scraper overrides Gemini/ChatGPT so profilePic & posts always visible
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
     profileData.instagramPostsCount = counts.value.posts.toString();
 
-    // ✅ ensure profile picture is always set when available
     if (
       typeof counts.value.profilePic === "string" &&
       counts.value.profilePic.trim() !== ""
@@ -198,10 +197,8 @@ Instagram Handle: "${handle}"
     if (counts.value.fullName) profileData.fullName = counts.value.fullName;
     if (counts.value.bio) profileData.intro = counts.value.bio;
 
-    // ✅ NEW: take latest 5 posts engagement from scraper when available
-    const scrapedPosts = (counts.value as any).latestPosts;
-    if (Array.isArray(scrapedPosts) && scrapedPosts.length > 0) {
-      profileData.latestPosts = scrapedPosts.slice(0, 5).map((p: any) => {
+    if (Array.isArray(counts.value.latestPosts) && counts.value.latestPosts.length > 0) {
+      profileData.latestPosts = counts.value.latestPosts.slice(0, 5).map((p: any) => {
         const likes = typeof p?.likes === "number" ? p.likes : null;
         const comments = typeof p?.comments === "number" ? p.comments : null;
         const views = typeof p?.views === "number" ? p.views : null;
