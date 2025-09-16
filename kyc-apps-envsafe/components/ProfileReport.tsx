@@ -97,53 +97,57 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
 
   const publicPosts = profile.latestPosts || [];
 
-  /* --- PDF EXPORT --- */
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
       const pdf = new jsPDF("p", "mm", "a4");
       const FONT = "Helvetica";
-      pdf.setFont(FONT, "bold");
-      pdf.setFontSize(20);
-      pdf.text("Client KYC Report", 105, 20, { align: "center" });
+      const FONT_SIZES = { title: 22, heading: 16, body: 10 };
+      const MARGINS = { top: 20, left: 20 };
+      const PAGE_WIDTH = pdf.internal.pageSize.getWidth();
+      const contentWidth = PAGE_WIDTH - MARGINS.left * 2;
+      let yPos = MARGINS.top;
 
-      let yPos = 40;
-      const addItem = (label: string, value: any) => {
-        if (!value || value === "Not Publicly Available") value = "Not Publicly Available";
-        pdf.setFont(FONT, "bold");
-        pdf.setFontSize(12);
-        pdf.text(`${label}:`, 20, yPos);
-        pdf.setFont(FONT, "normal");
-        pdf.setFontSize(11);
-        const textLines = pdf.splitTextToSize(String(value), 160);
-        pdf.text(textLines, 60, yPos);
-        yPos += textLines.length * 6 + 2;
+      const addItem = (label: string, value?: string | number | null) => {
+        const text = `${label}: ${value ?? "Not Publicly Available"}`;
+        const wrapped = pdf.splitTextToSize(text, contentWidth);
+        pdf.text(wrapped, MARGINS.left, yPos);
+        yPos += wrapped.length * 6 + 2;
       };
 
-      // Add key fields
+      // Title
+      pdf.setFont(FONT, "bold");
+      pdf.setFontSize(FONT_SIZES.title);
+      pdf.text("Client KYC Report", PAGE_WIDTH / 2, 30, { align: "center" });
+
+      pdf.setFontSize(FONT_SIZES.heading);
+      pdf.text(profile.fullName || "Not Publicly Available", PAGE_WIDTH / 2, 45, { align: "center" });
+
+      pdf.addPage();
+      pdf.setFontSize(FONT_SIZES.body);
+
+      // Personal Info
       addItem("Full Name", profile.fullName);
+      addItem("Date of Birth", formatDOBWithAge(profile.dateOfBirth, profile.age));
       addItem("Profession", profile.profession);
       addItem("Education", profile.education);
       addItem("Location", `${profile.location}, ${profile.country}`);
       addItem("Income / Net Worth", profile.incomeOrNetWorth);
 
-      // Latest posts
-      pdf.setFont(FONT, "bold");
-      pdf.setFontSize(14);
-      pdf.text("Latest Posts Engagement", 20, yPos + 10);
-      yPos += 18;
+      // Business Info
+      addItem("Business Name", profile.businessName);
+      addItem("Business Website", profile.businessWebsite);
+
+      // Latest Posts
       if (publicPosts.length > 0) {
         publicPosts.forEach((p, i) => {
-          addItem(`Post ${i + 1} Caption`, p.caption || "Not Publicly Available");
-          addItem(`Post ${i + 1} Likes`, p.likes ?? "Not Publicly Available");
-          addItem(`Post ${i + 1} Comments`, p.comments ?? "Not Publicly Available");
-          addItem(`Post ${i + 1} Views`, p.views ?? "Not Publicly Available");
-          addItem(`Post ${i + 1} Engagement`, p.engagement || "Not Publicly Available");
-          addItem(`Post ${i + 1} Date`, p.postedAt || "Not Publicly Available");
+          addItem(`Post ${i + 1} Caption`, p.caption);
+          addItem(`Post ${i + 1} Likes`, p.likes);
+          addItem(`Post ${i + 1} Comments`, p.comments);
+          addItem(`Post ${i + 1} Views`, p.views);
+          addItem(`Post ${i + 1} Date`, p.postedAt);
           yPos += 4;
         });
-      } else {
-        addItem("Posts", "Not Publicly Available");
       }
 
       pdf.save(`${(profile.fullName || "kyc-report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`);
@@ -244,14 +248,13 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
                       <strong>Caption:</strong> {post.caption || "Not Publicly Available"}
                     </p>
                     <p className="text-sm text-slate-700 dark:text-slate-400 mb-1">
-                      <strong>Likes:</strong> {post.likes ?? "Not Publicly Available"} | <strong>Comments:</strong>{" "}
-                      {post.comments ?? "Not Publicly Available"}
+                      <strong>Likes:</strong> {post.likes ?? "Not Publicly Available"}
+                    </p>
+                    <p className="text-sm text-slate-700 dark:text-slate-400 mb-1">
+                      <strong>Comments:</strong> {post.comments ?? "Not Publicly Available"}
                     </p>
                     <p className="text-sm text-slate-700 dark:text-slate-400 mb-1">
                       <strong>Views:</strong> {post.views ?? "Not Publicly Available"}
-                    </p>
-                    <p className="text-sm text-slate-700 dark:text-slate-400 mb-1">
-                      <strong>Engagement:</strong> {post.engagement || "Not Publicly Available"}
                     </p>
                     <p className="text-sm text-slate-700 dark:text-slate-400">
                       <strong>Date:</strong> {post.postedAt || "Not Publicly Available"}
