@@ -2,7 +2,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-
 import React, { useState } from "react";
 import { ProfileData } from "../types";
 import jsPDF from "jspdf";
@@ -37,16 +36,35 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?:
 );
 
 const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) => {
-  let displayValue: string;
+  let displayValue: React.ReactNode = "Not Publicly Available";
 
-  if (value === null || value === undefined) {
-    displayValue = "Not Publicly Available";
+  if (value && typeof value === "string" && value.startsWith("http")) {
+    // single link
+    displayValue = (
+      <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+        {value}
+      </a>
+    );
   } else if (Array.isArray(value)) {
-    displayValue = value.length ? value.join(", ") : "Not Publicly Available";
-  } else if (typeof value === "object") {
-    displayValue = JSON.stringify(value, null, 2);
-  } else {
-    displayValue = value.toString() || "Not Publicly Available";
+    if (value.length > 0) {
+      displayValue = (
+        <ul className="space-y-1">
+          {value.map((v, i) =>
+            typeof v === "string" && v.startsWith("http") ? (
+              <li key={i}>
+                <a href={v} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+                  {v}
+                </a>
+              </li>
+            ) : (
+              <li key={i}>{v}</li>
+            )
+          )}
+        </ul>
+      );
+    }
+  } else if (typeof value === "string" && value.trim() !== "") {
+    displayValue = value;
   }
 
   return (
@@ -72,37 +90,6 @@ function formatDOBWithAge(dob?: string, age?: number | null): string {
   const calcAge = age || new Date().getFullYear() - birth.getFullYear();
   return `${dob} (Age: ${calcAge})`;
 }
-
-const renderWebsiteLinks = (urls: string) => {
-  if (!urls || urls === "Not Publicly Available") return "Not Publicly Available";
-  const urlArray = urls
-    .split(/[\s,]+/)
-    .map((u) => u.trim())
-    .filter((u) => u.startsWith("http://") || u.startsWith("https://"));
-  if (urlArray.length === 0) return urls;
-  return (
-    <ul className="space-y-1">
-      {urlArray.map((url, i) => (
-        <li key={i}>
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-500 hover:underline break-all"
-          >
-            {url}
-          </a>
-        </li>
-      ))}
-    </ul>
-  );
-};
-
-const normalizeList = (value: string | string[] | undefined): string[] => {
-  if (!value) return ["Not Publicly Available"];
-  if (Array.isArray(value)) return value.length ? value : ["Not Publicly Available"];
-  return value.split(/[,|/]+/).map((v) => v.trim()).filter(Boolean);
-};
 
 const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
   const [isExporting, setIsExporting] = useState(false);
@@ -179,7 +166,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <InfoItem label="Education" value={profile.education} />
             <InfoItem label="Location" value={`${profile.location}, ${profile.country}`} />
             <InfoItem label="Family Info" value={profile.familyInfo} />
-            <InfoItem label="Interests" value={normalizeList(profile.interests).join(", ")} />
+            <InfoItem label="Interests" value={profile.interests} />
             <InfoItem label="Income / Net Worth" value={profile.incomeOrNetWorth} />
           </ReportSection>
 
@@ -187,7 +174,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           <ReportSection title="Business Information" icon={<BriefcaseIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Business Name" value={profile.businessName} />
             <InfoItem label="Business Type" value={profile.businessType} />
-            <InfoItem label="Website" value={renderWebsiteLinks(profile.businessWebsite)} />
+            <InfoItem label="Website" value={profile.businessWebsite} />
             <InfoItem label="Website Title" value={profile.businessWebsiteInfo?.title} />
             <InfoItem label="Website Description" value={profile.businessWebsiteInfo?.description} />
             <InfoItem label="Overview" value={profile.businessOverview} />
@@ -234,7 +221,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
                   <InfoItem label="Platform" value={acc.platform} />
                   <InfoItem label="Handle" value={acc.handle} />
                   <InfoItem label="Followers" value={acc.followers} />
-                  <InfoItem label="URL" value={renderWebsiteLinks(acc.url)} />
+                  <InfoItem label="URL" value={acc.url} />
                 </div>
               ))
             ) : (
@@ -264,7 +251,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           {/* Analysis & Sources */}
           <ReportSection title="Analysis & Sources" icon={<InfoIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Confidence Score" value={profile.confidenceScore?.toString()} />
-            <InfoItem label="Enriched Sources" value={normalizeList(profile.enrichedSources).join(", ")} />
+            <InfoItem label="Enriched Sources" value={profile.enrichedSources} />
             <InfoItem label="Last Fetched" value={profile.lastFetched} />
           </ReportSection>
         </div>
