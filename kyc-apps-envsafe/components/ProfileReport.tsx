@@ -14,7 +14,9 @@ import {
   MegaphoneIcon,
   GlobeAltIcon,
   DocumentDownloadIcon,
-} from "./icons"; // ⬅️ removed NewspaperIcon & InfoIcon
+  NewspaperIcon,
+  InfoIcon,
+} from "./icons";
 
 interface ProfileReportProps {
   profile: ProfileData;
@@ -35,18 +37,14 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?:
 );
 
 const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) => {
-  let displayValue: React.ReactNode;
+  let displayValue: string;
 
   if (value === null || value === undefined) {
     displayValue = "Not Publicly Available";
   } else if (Array.isArray(value)) {
     displayValue = value.length ? value.join(", ") : "Not Publicly Available";
-  } else if (React.isValidElement(value)) {
-    // If it's a React element (like a <ul> or <a>), render directly
-    displayValue = value;
   } else if (typeof value === "object") {
-    // If it's some other object, show safely
-    displayValue = "Not Publicly Available";
+    displayValue = JSON.stringify(value, null, 2);
   } else {
     displayValue = value.toString() || "Not Publicly Available";
   }
@@ -54,9 +52,7 @@ const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) =>
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4">
       <span className="font-semibold text-slate-600 dark:text-slate-400 md:col-span-1">{label}:</span>
-      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">
-        {displayValue}
-      </div>
+      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">{displayValue}</div>
     </div>
   );
 };
@@ -253,7 +249,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           </ReportSection>
 
           {/* Recent News */}
-          <ReportSection title="Recent News" icon={<MegaphoneIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+          <ReportSection title="Recent News" icon={<NewspaperIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             {profile.recentNews?.length > 0 ? (
               <ul className="space-y-1">
                 {profile.recentNews.map((news, i) => (
@@ -266,7 +262,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           </ReportSection>
 
           {/* Analysis & Sources */}
-          <ReportSection title="Analysis & Sources" icon={<ChartBarIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+          <ReportSection title="Analysis & Sources" icon={<InfoIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Confidence Score" value={profile.confidenceScore?.toString()} />
             <InfoItem label="Enriched Sources" value={normalizeList(profile.enrichedSources).join(", ")} />
             <InfoItem label="Last Fetched" value={profile.lastFetched} />
