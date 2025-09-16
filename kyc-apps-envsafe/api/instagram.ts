@@ -26,22 +26,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const searchParams = new URLSearchParams({ username });
 
-    const response = await fetch(
-      `${API_URL}?${searchParams}`,
-      {
-        headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/javascript, */*; q=0.01",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Referer": `https://www.instagram.com/${username}/`,
-          "X-IG-App-ID": INSTAGRAM_APP_ID,
-          "X-Requested-With": "XMLHttpRequest",
-          "Connection": "keep-alive",
-        },
-        signal: AbortSignal.timeout(10000),
-      }
-    );
+    const response = await fetch(`${API_URL}?${searchParams}`, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": `https://www.instagram.com/${username}/`,
+        "X-IG-App-ID": INSTAGRAM_APP_ID,
+        "X-Requested-With": "XMLHttpRequest",
+        "Connection": "keep-alive",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
 
     if (response.status === 404) {
       return res.status(404).json({ error: "User not found" });
@@ -65,7 +62,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(404).json({ error: "User data not available" });
     }
 
-    const responseData = {
+    const responseData: any = {
       username: user.username,
       fullName: user.full_name || "",
       bio: user.biography || "",
@@ -76,6 +73,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       isPrivate: user.is_private || false,
       isVerified: user.is_verified || false,
     };
+
+    // ✅ Add latest 5 posts engagement
+    const edges = user.edge_owner_to_timeline_media?.edges || [];
+    responseData.latestPosts = edges.slice(0, 5).map((edge: any) => {
+      const node = edge.node;
+      return {
+        caption:
+          node.edge_media_to_caption?.edges?.[0]?.node?.text ||
+          "Not Publicly Available",
+        likes: node.edge_liked_by?.count || 0,
+        comments: node.edge_media_to_comment?.count || 0,
+        views: node.is_video ? node.video_view_count || null : null,
+        postedAt: new Date(node.taken_at_timestamp * 1000).toISOString(),
+        engagement: `${node.edge_liked_by?.count || 0} Likes, ${
+          node.edge_media_to_comment?.count || 0
+        } Comments${node.is_video ? `, ${node.video_view_count || 0} Views` : ""}`,
+      };
+    });
 
     res.setHeader(
       "Cache-Control",
