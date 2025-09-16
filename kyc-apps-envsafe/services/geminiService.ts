@@ -186,7 +186,15 @@ Instagram Handle: "${handle}"
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
     profileData.instagramPostsCount = counts.value.posts.toString();
-    if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
+
+    // ✅ ensure profile picture is always set when available
+    if (
+      typeof counts.value.profilePic === "string" &&
+      counts.value.profilePic.trim() !== ""
+    ) {
+      profileData.profilePictureUrl = counts.value.profilePic;
+    }
+
     if (counts.value.fullName) profileData.fullName = counts.value.fullName;
     if (counts.value.bio) profileData.intro = counts.value.bio;
 
@@ -198,7 +206,6 @@ Instagram Handle: "${handle}"
         const comments = typeof p?.comments === "number" ? p.comments : null;
         const views = typeof p?.views === "number" ? p.views : null;
 
-        // Build a clean engagement summary like "1,234 Likes, 56 Comments, 7,890 Views"
         const parts: string[] = [];
         if (likes !== null) parts.push(`${likes.toLocaleString()} Likes`);
         if (comments !== null) parts.push(`${comments.toLocaleString()} Comments`);
