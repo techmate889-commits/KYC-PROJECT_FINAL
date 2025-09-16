@@ -8,17 +8,14 @@ export interface InstagramCounts {
   following: number;
   posts: number;
 
-  // ✅ New optional fields (non-breaking)
-  fullName?: string;
-  bio?: string;
-  profilePic?: string;
+  // ✅ New: add latest posts engagement only
   latestPosts?: Array<{
     caption: string;
     likes: number | null;
     comments: number | null;
     views: number | null;
-    postedAt: string;         // ISO string if available
-    engagement: string;       // "X Likes, Y Comments, Z Views"
+    postedAt: string;
+    engagement: string;
   }>;
 }
 
@@ -44,16 +41,12 @@ export async function fetchInstagramCounts(
 
     const data = await res.json();
 
-    // ✅ Preserve existing fields EXACTLY…
-    const base: InstagramCounts = {
+    // ✅ Keep everything minimal & required
+    return {
       followers: data.followers ?? 0,
       following: data.following ?? 0,
       posts: data.posts ?? 0,
-    };
-
-    // ✅ …and only *extend* with optional fields if present
-    const latestPosts =
-      Array.isArray(data.latestPosts)
+      latestPosts: Array.isArray(data.latestPosts)
         ? data.latestPosts.map((p: any) => ({
             caption:
               typeof p?.caption === "string"
@@ -75,15 +68,7 @@ export async function fetchInstagramCounts(
             engagement:
               typeof p?.engagement === "string" ? p.engagement : "",
           }))
-        : undefined;
-
-    return {
-      ...base,
-      fullName: typeof data.fullName === "string" ? data.fullName : undefined,
-      bio: typeof data.bio === "string" ? data.bio : undefined,
-      profilePic:
-        typeof data.profilePic === "string" ? data.profilePic : undefined,
-      latestPosts,
+        : undefined,
     };
   } catch (err) {
     console.error("⚠️ Client fetch error:", err);
