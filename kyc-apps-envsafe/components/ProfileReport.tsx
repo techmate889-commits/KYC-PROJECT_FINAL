@@ -39,15 +39,14 @@ const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) =>
   let displayValue: React.ReactNode = "Not Publicly Available";
 
   if (value && typeof value === "string" && value.startsWith("http")) {
-    // single link
     displayValue = (
       <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
         {value}
       </a>
     );
   } else if (Array.isArray(value)) {
-    if (value.length > 0) {
-      displayValue = (
+    displayValue =
+      value.length > 0 ? (
         <ul className="space-y-1">
           {value.map((v, i) =>
             typeof v === "string" && v.startsWith("http") ? (
@@ -61,8 +60,9 @@ const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) =>
             )
           )}
         </ul>
+      ) : (
+        "Not Publicly Available"
       );
-    }
   } else if (typeof value === "string" && value.trim() !== "") {
     displayValue = value;
   }
@@ -82,7 +82,6 @@ const StatItem: React.FC<{ label: string; value: string }> = ({ label, value }) 
   </div>
 );
 
-/* --- Helpers --- */
 function formatDOBWithAge(dob?: string, age?: number | null): string {
   if (!dob || dob === "Not Publicly Available") return "Not Publicly Available";
   const birth = new Date(dob);
@@ -248,10 +247,9 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             )}
           </ReportSection>
 
-          {/* Analysis & Sources */}
-          <ReportSection title="Analysis & Sources" icon={<InfoIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+          {/* Analysis (without Enriched Sources) */}
+          <ReportSection title="Analysis" icon={<InfoIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Confidence Score" value={profile.confidenceScore?.toString()} />
-            <InfoItem label="Enriched Sources" value={profile.enrichedSources} />
             <InfoItem label="Last Fetched" value={profile.lastFetched} />
           </ReportSection>
         </div>
