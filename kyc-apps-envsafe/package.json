@@ -17,6 +17,7 @@
     "lucide-react": "^0.344.0",
     "recharts": "^2.8.0",
     "@google/generative-ai": "^0.16.0",
+    "@vercel/speed-insights": "^1.0.0",
     "axios": "^1.6.8"
   },
   "devDependencies": {
