@@ -11,7 +11,7 @@ import ProfileReport from "./components/ProfileReport";
 import Menu from "./components/Menu";
 import { fetchClientProfile } from "./services/geminiService";
 import type { ProfileData } from "./types";
-import { SpeedInsights } from "@vercel/speed-insights/next"; // 👈 NEW
+import { SpeedInsights } from "@vercel/speed-insights/react"; // ✅ FIXED for Vite + React
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() =>
@@ -89,7 +89,7 @@ export default function App() {
         onSelectProfile={handleSelectProfile}
       />
 
-      <SpeedInsights /> {/* 👈 NEW: Add at the bottom */}
+      <SpeedInsights /> {/* ✅ works with Vite + React */}
     </div>
   );
 }
