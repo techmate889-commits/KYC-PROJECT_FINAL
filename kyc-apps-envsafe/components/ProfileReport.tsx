@@ -35,14 +35,18 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?:
 );
 
 const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) => {
-  let displayValue: string;
+  let displayValue: React.ReactNode;
 
   if (value === null || value === undefined) {
     displayValue = "Not Publicly Available";
   } else if (Array.isArray(value)) {
     displayValue = value.length ? value.join(", ") : "Not Publicly Available";
+  } else if (React.isValidElement(value)) {
+    // If it's a React element (like a <ul> or <a>), render directly
+    displayValue = value;
   } else if (typeof value === "object") {
-    displayValue = JSON.stringify(value, null, 2);
+    // If it's some other object, show safely
+    displayValue = "Not Publicly Available";
   } else {
     displayValue = value.toString() || "Not Publicly Available";
   }
@@ -50,7 +54,9 @@ const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) =>
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4">
       <span className="font-semibold text-slate-600 dark:text-slate-400 md:col-span-1">{label}:</span>
-      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">{displayValue}</div>
+      <div className="md:col-span-2 text-slate-800 dark:text-slate-300 whitespace-pre-wrap">
+        {displayValue}
+      </div>
     </div>
   );
 };
