@@ -22,7 +22,11 @@ interface ProfileReportProps {
   profile: ProfileData;
 }
 
-const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?: React.ReactNode }> = ({ title, children, icon }) => (
+const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?: React.ReactNode }> = ({
+  title,
+  children,
+  icon,
+}) => (
   <div className="bg-white dark:bg-slate-800 shadow-md rounded-lg overflow-hidden break-inside-avoid">
     <div className="flex items-center p-4 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
       {icon}
@@ -32,12 +36,19 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode; icon?:
   </div>
 );
 
-const InfoItem: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => {
-  let displayValue: any = value;
-  if (Array.isArray(value)) {
-    displayValue = value.length > 0 ? value.join(", ") : "Not Publicly Available";
+const InfoItem: React.FC<{ label: string; value?: any }> = ({ label, value }) => {
+  let displayValue: string;
+
+  if (value === null || value === undefined) {
+    displayValue = "Not Publicly Available";
+  } else if (Array.isArray(value)) {
+    displayValue = value.length ? value.join(", ") : "Not Publicly Available";
+  } else if (typeof value === "object") {
+    displayValue = JSON.stringify(value, null, 2);
+  } else {
+    displayValue = value.toString() || "Not Publicly Available";
   }
-  if (!value) displayValue = "Not Publicly Available";
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-1 md:gap-4">
       <span className="font-semibold text-slate-600 dark:text-slate-400 md:col-span-1">{label}:</span>
@@ -73,7 +84,12 @@ const renderWebsiteLinks = (urls: string) => {
     <ul className="space-y-1">
       {urlArray.map((url, i) => (
         <li key={i}>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline break-all">
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 hover:underline break-all"
+          >
             {url}
           </a>
         </li>
@@ -99,7 +115,11 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
     try {
       const pdf = new jsPDF("p", "mm", "a4");
       pdf.text("Client KYC Report", 105, 20, { align: "center" });
-      pdf.save(`${(profile.fullName || "kyc-report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`);
+      pdf.save(
+        `${(profile.fullName || "kyc-report")
+          .replace(/[^a-z0-9]/gi, "_")
+          .toLowerCase()}_report.pdf`
+      );
     } finally {
       setIsExporting(false);
     }
@@ -111,14 +131,23 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
         <div className="space-y-6">
           {/* Hero */}
           <header className="relative bg-white dark:bg-slate-800 shadow-md rounded-lg p-6 flex flex-col sm:flex-row items-center gap-6">
-            {profile.profilePictureUrl && profile.profilePictureUrl !== "Not Publicly Available" ? (
-              <img src={profile.profilePictureUrl} alt={profile.fullName} className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow-lg" />
+            {profile.profilePictureUrl &&
+            profile.profilePictureUrl !== "Not Publicly Available" ? (
+              <img
+                src={profile.profilePictureUrl}
+                alt={profile.fullName}
+                className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover border-4 border-white dark:border-slate-700 shadow-lg"
+              />
             ) : (
               <UserCircleIcon className="w-24 h-24 sm:w-28 sm:h-28 text-slate-300 dark:text-slate-600" />
             )}
             <div className="text-center sm:text-left flex-1">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">{profile.fullName || "Not Publicly Available"}</h2>
-              <p className="text-lg sm:text-xl text-blue-500 dark:text-blue-400 font-medium">{profile.instagramUsername || "Not Publicly Available"}</p>
+              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
+                {profile.fullName || "Not Publicly Available"}
+              </h2>
+              <p className="text-lg sm:text-xl text-blue-500 dark:text-blue-400 font-medium">
+                {profile.instagramUsername || "Not Publicly Available"}
+              </p>
               <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <div className="grid grid-cols-3 divide-x divide-slate-200 dark:divide-slate-700 max-w-sm mx-auto sm:mx-0">
                   <StatItem label="Followers" value={profile.instagramFollowers} />
@@ -181,12 +210,19 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
               <ul className="space-y-2">
                 {publicPosts.map((post, index) => (
                   <li key={index} className="text-sm text-slate-600 dark:text-slate-400">
-                    <strong>Post {index + 1}:</strong> {post.caption || "Not Publicly Available"} | Likes: {post.likes ?? "N/A"} | Comments: {post.comments ?? "N/A"} | Views: {post.views ?? "N/A"} | Engagement: {post.engagement || "Not Publicly Available"} | Date: {post.postedAt || "Not Publicly Available"}
+                    <strong>Post {index + 1}:</strong>{" "}
+                    {`Caption: ${post.caption || "Not Publicly Available"} | Likes: ${
+                      post.likes ?? "Not Publicly Available"
+                    } | Comments: ${post.comments ?? "Not Publicly Available"} | Views: ${
+                      post.views ?? "Not Publicly Available"
+                    } | Engagement: ${post.engagement || "Not Publicly Available"} | Date: ${
+                      post.postedAt || "Not Publicly Available"
+                    }`}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-slate-500 dark:text-slate-400 italic">No posts available.</p>
+              <p className="text-slate-500 dark:text-slate-400 italic">Not Publicly Available</p>
             )}
           </ReportSection>
 
