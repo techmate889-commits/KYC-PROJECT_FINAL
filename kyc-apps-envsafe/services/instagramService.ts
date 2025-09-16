@@ -8,7 +8,10 @@ export interface InstagramCounts {
   following: number;
   posts: number;
 
-  // ✅ New: add latest posts engagement only
+  // ✅ New: add profile picture
+  profilePic?: string;
+
+  // ✅ Latest posts engagement
   latestPosts?: Array<{
     caption: string;
     likes: number | null;
@@ -46,6 +49,10 @@ export async function fetchInstagramCounts(
       followers: data.followers ?? 0,
       following: data.following ?? 0,
       posts: data.posts ?? 0,
+      profilePic:
+        typeof data.profilePic === "string" && data.profilePic.trim() !== ""
+          ? data.profilePic
+          : undefined,
       latestPosts: Array.isArray(data.latestPosts)
         ? data.latestPosts.map((p: any) => ({
             caption:
