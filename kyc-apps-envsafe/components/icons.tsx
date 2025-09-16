@@ -16,6 +16,24 @@ export const MagicWandIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) =>
     </svg>
 );
 
+// Newspaper (for Recent News)
+export const NewspaperIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M19.5 3.75h-15A1.5 1.5 0 003 5.25v13.5A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V5.25a1.5 1.5 0 00-1.5-1.5zM6 7.5h6a.75.75 0 010 1.5H6a.75.75 0 010-1.5zm0 3h6a.75.75 0 010 1.5H6a.75.75 0 010-1.5zm0 3h3a.75.75 0 010 1.5H6a.75.75 0 010-1.5zm12 3.75H6.75a.75.75 0 110-1.5H18a.75.75 0 110 1.5zm0-3H12a.75.75 0 110-1.5h6a.75.75 0 110 1.5zm0-3H12a.75.75 0 110-1.5h6a.75.75 0 110 1.5zm0-3H12a.75.75 0 110-1.5h6a.75.75 0 110 1.5z" />
+  </svg>
+);
+
+// Info (for Analysis & Sources)
+export const InfoIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
+    <path
+      fillRule="evenodd"
+      d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM10.875 8.25A1.125 1.125 0 1112 9.375 1.125 1.125 0 0110.875 8.25zM12 11.25a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5a.75.75 0 01.75-.75z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
 export const PaletteIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" {...props}>
     <path d="M14.25 2.25a.75.75 0 00-.75.75v.038a8.208 8.208 0 017.5 7.5v.038a.75.75 0 00.75.75h.038a.75.75 0 00.75-.75v-1.5a.75.75 0 00-.75-.75H21a.75.75 0 00-.75.75v.19a6.695 6.695 0 00-6-6h-.19a.75.75 0 00-.75.75zM8.25 4.5a.75.75 0 00-.75.75v14.25a.75.75 0 00.75.75h1.5a.75.75 0 00.75-.75V5.25a.75.75 0 00-.75-.75h-1.5z" />
