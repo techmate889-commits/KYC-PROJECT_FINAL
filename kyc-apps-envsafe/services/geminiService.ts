@@ -6,6 +6,7 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
+import { fetchChatGPTProfile } from "./chatgptService"; // ✅ NEW
 
 /** Extract valid JSON object from model output */
 const cleanJsonString = (jsonString: string): string => {
@@ -15,7 +16,27 @@ const cleanJsonString = (jsonString: string): string => {
   return jsonString.substring(firstBrace, lastBrace + 1);
 };
 
-/** Fetch client profile using Gemini (qualitative) + Scraper (counts) */
+/** Merge helper: only keeps non-empty, non-"Not Publicly Available" values */
+const safeMerge = (...sources: any[]) => {
+  const result: any = {};
+  for (const src of sources) {
+    if (src && typeof src === "object") {
+      for (const [key, value] of Object.entries(src)) {
+        if (
+          value !== undefined &&
+          value !== null &&
+          value !== "" &&
+          value !== "Not Publicly Available"
+        ) {
+          result[key] = value;
+        }
+      }
+    }
+  }
+  return result;
+};
+
+/** Fetch client profile using Gemini + ChatGPT + Instagram counts */
 export const fetchClientProfile = async (
   handle: string
 ): Promise<ProfileData> => {
@@ -28,11 +49,12 @@ You are an expert KYC analyst. Build a verified profile of a client using their 
 - Never guess or invent.
 - If data cannot be confirmed from trusted, publicly available sources, set "Not Publicly Available".
 - Followers, Following, and Posts are EXCLUDED (handled separately).
-- Output must be valid JSON only. No explanations, no markdown.
+- Respond with one JSON object ONLY. No explanations, no markdown, no text outside the JSON.
 
 Instagram Handle: "${handle}"
 
-Required Schema:
+Required Schema (fill every field):
+\`\`\`json
 {
   "instagramUsername": string,
   "instagramHandle": string,
@@ -69,12 +91,13 @@ Required Schema:
   "confidenceScore": number,
   "lastFetched": string
 }
+\`\`\`
 `;
 
-  console.log("🚀 Running Gemini + Scraper in parallel...");
+  console.log("🚀 Running Gemini + ChatGPT + Scraper in parallel...");
 
-  // 🔹 Run Gemini + Scraper at the same time
-  const [geminiResponse, counts] = await Promise.allSettled([
+  // 🔹 Run Gemini + ChatGPT + Instagram Scraper at the same time
+  const [geminiResponse, chatgptResponse, counts] = await Promise.allSettled([
     ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
@@ -83,17 +106,18 @@ Required Schema:
         temperature: 0.0,
       },
     }),
-    fetchInstagramCounts(handle.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, ""))
+    fetchChatGPTProfile(handle), // ✅ NEW
+    fetchInstagramCounts(
+      handle.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")
+    ),
   ]);
 
-  let baseData: any = {};
+  let geminiData: any = {};
   if (geminiResponse.status === "fulfilled") {
     try {
       const rawText = (geminiResponse.value as GenerateContentResponse).text;
       const jsonText = cleanJsonString(rawText);
-      if (jsonText) {
-        baseData = JSON.parse(jsonText);
-      }
+      if (jsonText) geminiData = JSON.parse(jsonText);
     } catch (err) {
       console.warn("⚠️ Gemini parsing failed:", err);
     }
@@ -101,14 +125,21 @@ Required Schema:
     console.warn("⚠️ Gemini request failed:", geminiResponse.reason);
   }
 
+  const chatgptData =
+    chatgptResponse.status === "fulfilled" ? chatgptResponse.value : {};
+
+  // Merge Gemini + ChatGPT
+  let profileData: any = safeMerge(geminiData, chatgptData);
+
+  // Add ID + defaults
   const username =
-    typeof baseData.instagramUsername === "string" &&
-    baseData.instagramUsername !== "Not Publicly Available"
-      ? baseData.instagramUsername.replace("@", "")
+    typeof profileData.instagramUsername === "string" &&
+    profileData.instagramUsername !== "Not Publicly Available"
+      ? profileData.instagramUsername.replace("@", "")
       : handle;
 
-  const profileData: ProfileData = {
-    ...baseData,
+  profileData = {
+    ...profileData,
     id: username,
     lastFetched: new Date().toISOString(),
     instagramFollowers: "Not Publicly Available",
@@ -116,6 +147,7 @@ Required Schema:
     instagramPostsCount: "Not Publicly Available",
   };
 
+  // Merge Instagram counts
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
@@ -128,5 +160,5 @@ Required Schema:
   }
 
   console.log("✅ Final merged profile:", profileData);
-  return profileData;
+  return profileData as ProfileData;
 };
