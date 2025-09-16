@@ -52,7 +52,7 @@ export async function fetchInstagramCounts(
       profilePic:
         typeof data.profilePic === "string" && data.profilePic.trim() !== ""
           ? data.profilePic
-          : undefined,
+          : "Not Publicly Available",
       latestPosts: Array.isArray(data.latestPosts)
         ? data.latestPosts.map((p: any) => ({
             caption:
@@ -73,7 +73,9 @@ export async function fetchInstagramCounts(
                 : null,
             postedAt: typeof p?.postedAt === "string" ? p.postedAt : "",
             engagement:
-              typeof p?.engagement === "string" ? p.engagement : "",
+              typeof p?.engagement === "string"
+                ? p.engagement
+                : "Not Publicly Available",
           }))
         : undefined,
     };
