@@ -35,6 +35,7 @@ const buildDefaultProfile = (handle: string): ProfileData => ({
   businessName: "Not Publicly Available",
   businessType: "Not Publicly Available",
   businessWebsite: "Not Publicly Available",
+  businessWebsiteInfo: { title: "Not Publicly Available", description: "Not Publicly Available" },
   businessOverview: "Not Publicly Available",
   businessAccountId: "Not Publicly Available",
   engagementRatio: "Not Publicly Available",
@@ -45,6 +46,7 @@ const buildDefaultProfile = (handle: string): ProfileData => ({
   otherSocialMedia: [],
   awards: "Not Publicly Available",
   mediaCoverage: "Not Publicly Available",
+  recentNews: [],
   incomeOrNetWorth: "Not Publicly Available",
   intro: "Not Publicly Available",
   enrichedSources: [],
@@ -83,16 +85,23 @@ export const fetchClientProfile = async (
   const prompt = `
 You are an expert KYC analyst. Build a verified profile of a client using their Instagram handle.
 
-⚠️ STRICT RULES:
-- Never guess or invent.
-- If data cannot be confirmed from trusted, publicly available sources, set "Not Publicly Available".
-- Followers, Following, and Posts are EXCLUDED (handled separately).
-- Respond with one JSON object ONLY. No explanations, no markdown, no text outside the JSON.
+⚠️ CRITICAL RULES:
+- Never guess, assume, or invent information.
+- If a piece of information cannot be confirmed from reliable sources, set its value to "Not Publicly Available".
+- All fields listed in the schema MUST be present in the output, even if their value is "Not Publicly Available".
+- Do not add extra fields not in the schema.
+- Respond with exactly ONE JSON object. No explanations, no markdown, no text before or after.
+
+Sources to use:
+- Instagram profile + bio
+- Wikipedia (if available)
+- Reliable news sources
+- Business / personal website (if available)
+- Other public social media accounts (LinkedIn, Twitter, YouTube, etc.)
 
 Instagram Handle: "${handle}"
 
-Required Schema (fill every field):
-\`\`\`json
+📌 Required Schema:
 {
   "instagramUsername": string,
   "instagramHandle": string,
@@ -109,6 +118,7 @@ Required Schema (fill every field):
   "businessName": string | "Not Publicly Available",
   "businessType": string | "Not Publicly Available",
   "businessWebsite": string | "Not Publicly Available",
+  "businessWebsiteInfo": { "title": string, "description": string },
   "businessOverview": string | "Not Publicly Available",
   "businessAccountId": string | "Not Publicly Available",
   "engagementRatio": string | "Not Publicly Available",
@@ -123,13 +133,13 @@ Required Schema (fill every field):
   ],
   "awards": string | "Not Publicly Available",
   "mediaCoverage": string | [string] | "Not Publicly Available",
+  "recentNews": [string] | [],
   "incomeOrNetWorth": string | "Not Publicly Available",
   "intro": string,
   "enrichedSources": [string],
   "confidenceScore": number,
   "lastFetched": string
 }
-\`\`\`
 `;
 
   console.log("🚀 Running Gemini + ChatGPT + Scraper in parallel...");
