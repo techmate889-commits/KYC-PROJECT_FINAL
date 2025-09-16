@@ -8,9 +8,10 @@ import Header from "./components/Header";
 import SearchForm from "./components/SearchForm";
 import Spinner from "./components/Spinner";
 import ProfileReport from "./components/ProfileReport";
-import Menu from "./components/Menu"; // NEW
+import Menu from "./components/Menu";
 import { fetchClientProfile } from "./services/geminiService";
 import type { ProfileData } from "./types";
+import { SpeedInsights } from "@vercel/speed-insights/next"; // 👈 NEW
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() =>
@@ -22,7 +23,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false); // NEW
+  const [menuOpen, setMenuOpen] = useState(false);
 
   // Theme switch
   useEffect(() => {
@@ -71,7 +72,7 @@ export default function App() {
         onThemeToggle={() =>
           setTheme((t) => (t === "dark" ? "light" : "dark"))
         }
-        onMenuClick={() => setMenuOpen(true)} // pass click handler
+        onMenuClick={() => setMenuOpen(true)}
       />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <SearchForm onSearch={onSearch} />
@@ -87,6 +88,8 @@ export default function App() {
         activeProfileId={profile?.id || null}
         onSelectProfile={handleSelectProfile}
       />
+
+      <SpeedInsights /> {/* 👈 NEW: Add at the bottom */}
     </div>
   );
 }
