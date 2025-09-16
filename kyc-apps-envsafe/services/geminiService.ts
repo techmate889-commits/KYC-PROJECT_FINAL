@@ -6,7 +6,7 @@
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ProfileData } from "../types";
 import { fetchInstagramCounts } from "./instagramService";
-import { fetchChatGPTProfile } from "./chatgptService"; // ✅ NEW
+import { fetchChatGPTProfile } from "./chatgptService";
 
 /** Extract valid JSON object from model output */
 const cleanJsonString = (jsonString: string): string => {
@@ -16,7 +16,45 @@ const cleanJsonString = (jsonString: string): string => {
   return jsonString.substring(firstBrace, lastBrace + 1);
 };
 
-/** Merge helper: only keeps non-empty, non-"Not Publicly Available" values */
+/** Default schema so all fields always exist */
+const buildDefaultProfile = (handle: string): ProfileData => ({
+  id: handle,
+  lastFetched: new Date().toISOString(),
+  instagramUsername: handle,
+  instagramHandle: "@" + handle,
+  fullName: "Not Publicly Available",
+  dateOfBirth: "Not Publicly Available",
+  age: null,
+  profilePictureUrl: "Not Publicly Available",
+  profession: "Not Publicly Available",
+  education: "Not Publicly Available",
+  interests: [],
+  familyInfo: "Not Publicly Available",
+  country: "Not Publicly Available",
+  location: "Not Publicly Available",
+  businessName: "Not Publicly Available",
+  businessType: "Not Publicly Available",
+  businessWebsite: "Not Publicly Available",
+  businessOverview: "Not Publicly Available",
+  businessAccountId: "Not Publicly Available",
+  engagementRatio: "Not Publicly Available",
+  postFrequency: "Not Publicly Available",
+  contentType: "Not Publicly Available",
+  contentQuality: { rating: "Not Publicly Available", notes: "" },
+  latestPosts: [],
+  otherSocialMedia: [],
+  awards: "Not Publicly Available",
+  mediaCoverage: "Not Publicly Available",
+  incomeOrNetWorth: "Not Publicly Available",
+  intro: "Not Publicly Available",
+  enrichedSources: [],
+  confidenceScore: 0,
+  instagramFollowers: "Not Publicly Available",
+  instagramFollowing: "Not Publicly Available",
+  instagramPostsCount: "Not Publicly Available",
+});
+
+/** Safe merge: only keeps non-empty and not "Not Publicly Available" */
 const safeMerge = (...sources: any[]) => {
   const result: any = {};
   for (const src of sources) {
@@ -96,17 +134,14 @@ Required Schema (fill every field):
 
   console.log("🚀 Running Gemini + ChatGPT + Scraper in parallel...");
 
-  // 🔹 Run Gemini + ChatGPT + Instagram Scraper at the same time
+  // Run Gemini + ChatGPT + Scraper
   const [geminiResponse, chatgptResponse, counts] = await Promise.allSettled([
     ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        temperature: 0.0,
-      },
+      config: { tools: [{ googleSearch: {} }], temperature: 0.0 },
     }),
-    fetchChatGPTProfile(handle), // ✅ NEW
+    fetchChatGPTProfile(handle),
     fetchInstagramCounts(
       handle.replace(/^https?:\/\/(www\.)?instagram\.com\//, "").replace(/\/$/, "")
     ),
@@ -121,33 +156,22 @@ Required Schema (fill every field):
     } catch (err) {
       console.warn("⚠️ Gemini parsing failed:", err);
     }
-  } else {
-    console.warn("⚠️ Gemini request failed:", geminiResponse.reason);
   }
 
   const chatgptData =
     chatgptResponse.status === "fulfilled" ? chatgptResponse.value : {};
 
-  // Merge Gemini + ChatGPT
-  let profileData: any = safeMerge(geminiData, chatgptData);
+  const igCounts =
+    counts.status === "fulfilled" && counts.value ? counts.value : {};
 
-  // Add ID + defaults
-  const username =
-    typeof profileData.instagramUsername === "string" &&
-    profileData.instagramUsername !== "Not Publicly Available"
-      ? profileData.instagramUsername.replace("@", "")
-      : handle;
-
-  profileData = {
-    ...profileData,
-    id: username,
+  // Merge everything with defaults
+  let profileData: ProfileData = {
+    ...buildDefaultProfile(handle),
+    ...safeMerge(geminiData, chatgptData, igCounts),
     lastFetched: new Date().toISOString(),
-    instagramFollowers: "Not Publicly Available",
-    instagramFollowing: "Not Publicly Available",
-    instagramPostsCount: "Not Publicly Available",
   };
 
-  // Merge Instagram counts
+  // If IG counts provided, override follower/following/posts
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
@@ -155,10 +179,8 @@ Required Schema (fill every field):
     if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
     if (counts.value.fullName) profileData.fullName = counts.value.fullName;
     if (counts.value.bio) profileData.intro = counts.value.bio;
-  } else {
-    console.warn("⚠️ Scraper failed:", counts);
   }
 
   console.log("✅ Final merged profile:", profileData);
-  return profileData as ProfileData;
+  return profileData;
 };
