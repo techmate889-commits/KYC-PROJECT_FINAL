@@ -181,7 +181,7 @@ Instagram Handle: "${handle}"
     lastFetched: new Date().toISOString(),
   };
 
-  // If IG counts provided, override follower/following/posts
+  // If IG counts provided, override follower/following/posts (+ optional enrichments)
   if (counts.status === "fulfilled" && counts.value) {
     profileData.instagramFollowers = counts.value.followers.toString();
     profileData.instagramFollowing = counts.value.following.toString();
@@ -189,6 +189,31 @@ Instagram Handle: "${handle}"
     if (counts.value.profilePic) profileData.profilePictureUrl = counts.value.profilePic;
     if (counts.value.fullName) profileData.fullName = counts.value.fullName;
     if (counts.value.bio) profileData.intro = counts.value.bio;
+
+    // ✅ NEW: take latest 5 posts engagement from scraper when available
+    const scrapedPosts = (counts.value as any).latestPosts;
+    if (Array.isArray(scrapedPosts) && scrapedPosts.length > 0) {
+      profileData.latestPosts = scrapedPosts.slice(0, 5).map((p: any) => {
+        const likes = typeof p?.likes === "number" ? p.likes : null;
+        const comments = typeof p?.comments === "number" ? p.comments : null;
+        const views = typeof p?.views === "number" ? p.views : null;
+
+        // Build a clean engagement summary like "1,234 Likes, 56 Comments, 7,890 Views"
+        const parts: string[] = [];
+        if (likes !== null) parts.push(`${likes.toLocaleString()} Likes`);
+        if (comments !== null) parts.push(`${comments.toLocaleString()} Comments`);
+        if (views !== null) parts.push(`${views.toLocaleString()} Views`);
+
+        return {
+          caption: typeof p?.caption === "string" && p.caption.trim() ? p.caption : "Not Publicly Available",
+          likes,
+          comments,
+          views,
+          postedAt: typeof p?.postedAt === "string" ? p.postedAt : "Not Publicly Available",
+          engagement: parts.length ? parts.join(", ") : "Not Publicly Available",
+        };
+      });
+    }
   }
 
   console.log("✅ Final merged profile:", profileData);
