@@ -14,8 +14,6 @@ import {
   MegaphoneIcon,
   GlobeAltIcon,
   DocumentDownloadIcon,
-  NewspaperIcon,
-  InfoIcon,
 } from "./icons";
 
 interface ProfileReportProps {
@@ -249,7 +247,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           </ReportSection>
 
           {/* Recent News */}
-          <ReportSection title="Recent News" icon={<NewspaperIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+          <ReportSection title="Recent News" icon={<MegaphoneIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             {profile.recentNews?.length > 0 ? (
               <ul className="space-y-1">
                 {profile.recentNews.map((news, i) => (
@@ -262,7 +260,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
           </ReportSection>
 
           {/* Analysis & Sources */}
-          <ReportSection title="Analysis & Sources" icon={<InfoIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+          <ReportSection title="Analysis & Sources" icon={<ChartBarIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Confidence Score" value={profile.confidenceScore?.toString()} />
             <InfoItem label="Enriched Sources" value={normalizeList(profile.enrichedSources).join(", ")} />
             <InfoItem label="Last Fetched" value={profile.lastFetched} />
