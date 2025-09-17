@@ -289,6 +289,25 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
             <InfoItem label="Business Account ID" value={profile.businessAccountId} />
           </ReportSection>
 
+          {/* Google Business */}
+          {profile.googleBusiness && (
+            <ReportSection title="Google Business Profile" icon={<GlobeAltIcon className="h-5 w-5 mr-3 text-slate-400" />}>
+              <InfoItem
+                label="Listing Found"
+                value={
+                  profile.googleBusiness.listingFound === true
+                    ? "Yes"
+                    : profile.googleBusiness.listingFound === false
+                    ? "No"
+                    : "Not Publicly Available"
+                }
+              />
+              <InfoItem label="Average Rating" value={profile.googleBusiness.averageRating} />
+              <InfoItem label="Total Reviews" value={profile.googleBusiness.totalReviews} />
+              <InfoItem label="Last Review Date" value={profile.googleBusiness.lastReviewDate} />
+            </ReportSection>
+          )}
+
           {/* Instagram Analysis */}
           <ReportSection title="Instagram Analysis" icon={<ChartBarIcon className="h-5 w-5 mr-3 text-slate-400" />}>
             <InfoItem label="Handle" value={profile.instagramHandle} />
@@ -375,6 +394,7 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
         </div>
       </div>
     </div>
-    );
+  );
 };
-  export default ProfileReport ;
+
+export default ProfileReport;
