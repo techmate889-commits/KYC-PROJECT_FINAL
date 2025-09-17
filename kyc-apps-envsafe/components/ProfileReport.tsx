@@ -375,3 +375,6 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
         </div>
       </div>
     </div>
+    );
+  );
+  export default ProfileReport ;
