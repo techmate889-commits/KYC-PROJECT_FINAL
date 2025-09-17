@@ -54,6 +54,13 @@ const buildDefaultProfile = (handle: string): ProfileData => ({
   instagramFollowers: "Not Publicly Available",
   instagramFollowing: "Not Publicly Available",
   instagramPostsCount: "Not Publicly Available",
+  // ✅ New: Google Business defaults
+  googleBusiness: {
+    listingFound: false,
+    averageRating: "Not Publicly Available",
+    totalReviews: "Not Publicly Available",
+    lastReviewDate: "Not Publicly Available",
+  },
 });
 
 /** Safe merge: only keeps non-empty and not "Not Publicly Available" */
@@ -98,6 +105,7 @@ Sources to use:
 - Reliable news sources
 - Business / personal website (if available)
 - Other public social media accounts (LinkedIn, Twitter, YouTube, etc.)
+- Google Business Profile (if available). Extract average rating, total number of reviews, and the date of the most recent review.
 
 Instagram Handle: "${handle}"
 
@@ -138,7 +146,13 @@ Instagram Handle: "${handle}"
   "intro": string,
   "enrichedSources": [string],
   "confidenceScore": number,
-  "lastFetched": string
+  "lastFetched": string,
+  "googleBusiness": {
+    "listingFound": boolean,
+    "averageRating": string | "Not Publicly Available",
+    "totalReviews": string | "Not Publicly Available",
+    "lastReviewDate": string | "Not Publicly Available"
+  }
 }
 `;
 
