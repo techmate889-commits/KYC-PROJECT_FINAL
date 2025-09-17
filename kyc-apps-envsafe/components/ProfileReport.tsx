@@ -101,56 +101,121 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
     setIsExporting(true);
     try {
       const pdf = new jsPDF("p", "mm", "a4");
-      const FONT = "Helvetica";
-      const FONT_SIZES = { title: 22, heading: 16, body: 10 };
-      const MARGINS = { top: 20, left: 20 };
       const PAGE_WIDTH = pdf.internal.pageSize.getWidth();
-      const contentWidth = PAGE_WIDTH - MARGINS.left * 2;
+      const PAGE_HEIGHT = pdf.internal.pageSize.getHeight();
+      const MARGINS = { top: 20, left: 20, right: 20 };
+      const CONTENT_WIDTH = PAGE_WIDTH - MARGINS.left - MARGINS.right;
+
       let yPos = MARGINS.top;
+
+      const FONT = "Helvetica";
+      pdf.setFont(FONT);
+
+      const addSectionHeader = (title: string) => {
+        pdf.setFontSize(14);
+        pdf.setFont(FONT, "bold");
+        pdf.text(title, MARGINS.left, yPos);
+        yPos += 8;
+        pdf.setFont(FONT, "normal");
+        pdf.setFontSize(11);
+      };
 
       const addItem = (label: string, value?: string | number | null) => {
         const text = `${label}: ${value ?? "Not Publicly Available"}`;
-        const wrapped = pdf.splitTextToSize(text, contentWidth);
+        const wrapped = pdf.splitTextToSize(text, CONTENT_WIDTH);
+        if (yPos + wrapped.length * 6 > PAGE_HEIGHT - MARGINS.top) {
+          pdf.addPage();
+          yPos = MARGINS.top;
+        }
         pdf.text(wrapped, MARGINS.left, yPos);
         yPos += wrapped.length * 6 + 2;
       };
 
       // Title
+      pdf.setFontSize(18);
       pdf.setFont(FONT, "bold");
-      pdf.setFontSize(FONT_SIZES.title);
-      pdf.text("Client KYC Report", PAGE_WIDTH / 2, 30, { align: "center" });
+      pdf.text("Client KYC Report", PAGE_WIDTH / 2, yPos, { align: "center" });
+      yPos += 12;
+      pdf.setFontSize(13);
+      pdf.text(profile.fullName || "Not Publicly Available", PAGE_WIDTH / 2, yPos, { align: "center" });
+      yPos += 10;
 
-      pdf.setFontSize(FONT_SIZES.heading);
-      pdf.text(profile.fullName || "Not Publicly Available", PAGE_WIDTH / 2, 45, { align: "center" });
-
-      pdf.addPage();
-      pdf.setFontSize(FONT_SIZES.body);
+      // Summary stats
+      addSectionHeader("Profile Summary");
+      addItem("Instagram Username", profile.instagramUsername);
+      addItem("Followers", profile.instagramFollowers);
+      addItem("Following", profile.instagramFollowing);
+      addItem("Posts", profile.instagramPostsCount);
 
       // Personal Info
+      addSectionHeader("Personal Information");
       addItem("Full Name", profile.fullName);
       addItem("Date of Birth", formatDOBWithAge(profile.dateOfBirth, profile.age));
       addItem("Profession", profile.profession);
       addItem("Education", profile.education);
       addItem("Location", `${profile.location}, ${profile.country}`);
+      addItem("Family Info", profile.familyInfo);
+      addItem("Interests", profile.interests?.join(", "));
       addItem("Income / Net Worth", profile.incomeOrNetWorth);
 
       // Business Info
+      addSectionHeader("Business Information");
       addItem("Business Name", profile.businessName);
+      addItem("Business Type", profile.businessType);
       addItem("Business Website", profile.businessWebsite);
+      addItem("Overview", profile.businessOverview);
+      addItem("Business Account ID", profile.businessAccountId);
+
+      // Google Business (if present)
+      if ((profile as any).googleBusiness) {
+        addSectionHeader("Google Business Profile");
+        addItem("Listing Found", (profile as any).googleBusiness.listingFound ? "Yes" : "No");
+        addItem("Average Rating", (profile as any).googleBusiness.averageRating);
+        addItem("Total Reviews", (profile as any).googleBusiness.totalReviews);
+        addItem("Last Review Date", (profile as any).googleBusiness.lastReviewDate);
+      }
+
+      // Instagram Analysis
+      addSectionHeader("Instagram Analysis");
+      addItem("Handle", profile.instagramHandle);
+      addItem("Engagement Ratio", profile.engagementRatio);
+      addItem("Post Frequency", profile.postFrequency);
+      addItem("Content Type", profile.contentType);
+      addItem("Content Quality", profile.contentQuality?.rating);
+      addItem("Notes", profile.contentQuality?.notes);
 
       // Latest Posts
-      if (publicPosts.length > 0) {
-        publicPosts.forEach((p, i) => {
+      if (profile.latestPosts?.length > 0) {
+        addSectionHeader("Latest Posts Engagement");
+        profile.latestPosts.forEach((p, i) => {
           addItem(`Post ${i + 1} Caption`, p.caption);
           addItem(`Post ${i + 1} Likes`, p.likes);
           addItem(`Post ${i + 1} Comments`, p.comments);
           addItem(`Post ${i + 1} Views`, p.views);
           addItem(`Post ${i + 1} Date`, p.postedAt);
-          yPos += 4;
+          yPos += 2;
         });
       }
 
-      pdf.save(`${(profile.fullName || "kyc-report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`);
+      // Awards & Media
+      addSectionHeader("Awards & Media");
+      addItem("Awards", profile.awards);
+      addItem("Media Coverage", profile.mediaCoverage);
+
+      // Recent News
+      if (profile.recentNews?.length > 0) {
+        addSectionHeader("Recent News");
+        profile.recentNews.forEach((n, i) => addItem(`News ${i + 1}`, n));
+      }
+
+      // Analysis
+      addSectionHeader("Analysis");
+      addItem("Confidence Score", profile.confidenceScore?.toString());
+      addItem("Last Fetched", profile.lastFetched);
+
+      pdf.save(
+        `${(profile.fullName || "kyc-report").replace(/[^a-z0-9]/gi, "_").toLowerCase()}_report.pdf`
+      );
     } finally {
       setIsExporting(false);
     }
@@ -310,7 +375,3 @@ const ProfileReport: React.FC<ProfileReportProps> = ({ profile }) => {
         </div>
       </div>
     </div>
-  );
-};
-
-export default ProfileReport;
