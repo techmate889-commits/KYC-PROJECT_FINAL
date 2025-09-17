@@ -24,6 +24,14 @@ export interface ContentQuality {
   notes: string | "Not Publicly Available";
 }
 
+// ✅ New Google Business Info type
+export interface GoogleBusinessInfo {
+  listingFound: boolean;
+  averageRating: string | "Not Publicly Available";
+  totalReviews: string | "Not Publicly Available";
+  lastReviewDate: string | "Not Publicly Available";
+}
+
 export interface ProfileData {
   id: string;
   instagramUsername: string;
@@ -51,7 +59,7 @@ export interface ProfileData {
   otherSocialMedia: SocialMediaAccount[];
   awards: string | "Not Publicly Available";
   mediaCoverage: string | string[] | "Not Publicly Available";
-  incomeOrNetWorth: string | "Not Publicly Available";   // ✅ NEW FIELD
+  incomeOrNetWorth: string | "Not Publicly Available";   // ✅ NEW FIELD (already in your version)
   intro: string | "Not Publicly Available";
   enrichedSources: string[];   // ✅ list of URLs/sources used
   confidenceScore: number;     // ✅ 0–100
@@ -59,4 +67,7 @@ export interface ProfileData {
   instagramFollowing: string | "Not Publicly Available";
   instagramPostsCount: string | "Not Publicly Available";
   lastFetched: string;
+
+  // ✅ New Google Business Profile field
+  googleBusiness: GoogleBusinessInfo;
 }
