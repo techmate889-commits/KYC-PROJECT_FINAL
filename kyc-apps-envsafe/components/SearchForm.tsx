@@ -28,7 +28,7 @@ export default function SearchForm({ onSearch }: { onSearch: (username: string) 
     >
       {/* Heading */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-white">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-Blue">
           Know Your Client 🔍
         </h1>
         <p className="text-slate-300 max-w-lg text-sm sm:text-base">
