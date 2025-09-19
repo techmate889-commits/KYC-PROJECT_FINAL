@@ -1,7 +1,7 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ */
 
 import React, { useState, useEffect } from "react";
 import Header from "./components/Header";
@@ -23,6 +23,9 @@ export default function App() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false); // NEW
+
+  // ✅ MongoDB test state
+  const [mongoData, setMongoData] = useState<any[]>([]);
 
   // Theme switch
   useEffect(() => {
@@ -64,6 +67,30 @@ export default function App() {
     }
   };
 
+  // ✅ MongoDB helpers
+  const fetchMongo = async () => {
+    try {
+      const res = await fetch("/api/mongo-test");
+      const result = await res.json();
+      setMongoData(result);
+    } catch (err) {
+      console.error("Failed to fetch Mongo data:", err);
+    }
+  };
+
+  const insertMongo = async () => {
+    try {
+      await fetch("/api/mongo-test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "Test User", date: new Date() }),
+      });
+      fetchMongo();
+    } catch (err) {
+      console.error("Failed to insert Mongo data:", err);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white">
       <Header
@@ -78,6 +105,27 @@ export default function App() {
         {loading && <Spinner />}
         {error && <p className="mt-4 text-red-600">{error}</p>}
         <ProfileReport profile={profile} />
+
+        {/* ✅ MongoDB Test Controls */}
+        <div className="mt-8 border-t pt-4">
+          <h2 className="text-lg font-semibold mb-2">MongoDB Test</h2>
+          <button
+            onClick={insertMongo}
+            className="px-3 py-2 bg-green-600 text-white rounded mr-2"
+          >
+            Insert Test Data
+          </button>
+          <button
+            onClick={fetchMongo}
+            className="px-3 py-2 bg-blue-600 text-white rounded"
+          >
+            Fetch Data
+          </button>
+
+          <pre className="mt-4 p-2 bg-slate-200 dark:bg-slate-800 rounded text-sm overflow-x-auto">
+            {JSON.stringify(mongoData, null, 2)}
+          </pre>
+        </div>
       </main>
 
       {/* Slide-out Menu */}
