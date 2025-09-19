@@ -1,25 +1,15 @@
 import { MongoClient } from "mongodb";
+import { attachDatabasePool } from "@vercel/functions";
 
-const uri = process.env.MONGODB_URI as string;
+// ... existing connection setup ...
 
-if (!uri) {
-  throw new Error("Please add your MongoDB URI in Vercel environment variables");
-}
-
-const options = {};
-
-let client: MongoClient;
-let clientPromise: Promise<MongoClient>;
-
+// After creating the MongoClient, attach it to Vercel's pool manager
 if (process.env.NODE_ENV === "development") {
-  if (!(global as any)._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    (global as any)._mongoClientPromise = client.connect();
+  if (!globalWithMongo._mongoClient) {
+    globalWithMongo._mongoClient = new MongoClient(uri, options);
   }
-  clientPromise = (global as any)._mongoClientPromise;
+  client = globalWithMongo._mongoClient;
 } else {
   client = new MongoClient(uri, options);
-  clientPromise = client.connect();
+  attachDatabasePool(client);
 }
-
-export default clientPromise;
