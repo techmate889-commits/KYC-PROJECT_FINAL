@@ -18,7 +18,8 @@
     "recharts": "^2.8.0",
     "@google/generative-ai": "^0.16.0",
     "@vercel/speed-insights": "latest",
-    "axios": "^1.6.8"
+    "axios": "^1.6.8",
+    "mongodb": "^6.5.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.6",
